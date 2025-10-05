@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>離線幫助指南｜智護生活</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .guide-section {
+      display: grid;
+      gap: 1.25rem;
+    }
+    .guide-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="top-bar" aria-label="主要導覽">
+      <div class="brand">
+        <span class="brand-logo" aria-hidden="true">AI</span>
+        <h1>智護生活：AI 伴你</h1>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html">首頁</a>
+        <a href="login.html">登入</a>
+        <a href="guide.html" aria-current="page">離線幫助指南</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-label="離線指南介紹">
+        <div>
+          <p class="status-pill">可讀．可聽．可操作</p>
+          <h2>在沒有訊號的情況下也能安心使用的安全指引</h2>
+          <p>以下內容皆儲存在裝置內，可搭配語音朗讀按鈕使用，協助長者快速獲得幫助。</p>
+        </div>
+      </section>
+
+      <section class="card guide-section" aria-label="離線幫助內容">
+        <h2>陌生環境的自我保護步驟</h2>
+        <div class="guide-actions">
+          <button class="btn primary" type="button" data-read="保持冷靜，即使驚慌，也要努力保持理性，這樣才能更有效率地找到解決辦法。">
+            朗讀：保持冷靜
+          </button>
+          <button class="btn primary" type="button" data-read="仔細回想走失前最後記得的地點，以及可能讓自己感興趣或被吸引的周遭事物。">
+            朗讀：回想地點
+          </button>
+          <button class="btn primary" type="button" data-read="尋找可以安全撥打電話或使用行動網路的地方，像是便利商店或派出所。">
+            朗讀：尋找訊號
+          </button>
+          <button class="btn primary" type="button" data-read="尋找人潮較多的安全場所，例如超商、公園服務中心或車站，待在裡面等待救援。">
+            朗讀：尋找安全場所
+          </button>
+        </div>
+        <ul class="list">
+          <li><strong>保持冷靜</strong><span>深呼吸三次，告訴自己「我正在等待協助」。</span></li>
+          <li><strong>回想地點</strong><span>記下附近明顯地標，像是 7-11、紅色橋梁。</span></li>
+          <li><strong>尋找訊號</strong><span>移動到有亮光、可充電的地方，嘗試撥打家人電話。</span></li>
+          <li><strong>尋找安全場所</strong><span>與服務人員說明狀況，請他們幫忙聯絡家人。</span></li>
+        </ul>
+      </section>
+
+      <section class="card guide-section" aria-label="求助資訊">
+        <h2>緊急聯絡資訊</h2>
+        <p>若需要協助，請使用以下按鈕讓 AI 奶奶協助朗讀與記錄。</p>
+        <div class="guide-actions">
+          <button class="btn secondary" type="button" data-read="家人阿海電話，零九二一，三四五，六七八。">
+            朗讀：家人電話
+          </button>
+          <button class="btn secondary" type="button" data-read="社區志工服務站電話，零五，二二二，五五五五。">
+            朗讀：志工服務站
+          </button>
+          <button class="btn secondary" type="button" data-read="如遇緊急狀況請撥打一一九或者一一零。">
+            朗讀：緊急求助
+          </button>
+        </div>
+        <p class="helper-text">提示：將手機音量調高，或使用外放喇叭讓周遭的人也聽見。</p>
+      </section>
+
+      <section class="card guide-section" aria-label="自我定位提示">
+        <h2>沒有網路也能記住方向</h2>
+        <ul class="list">
+          <li><strong>記路標</strong><span>抬頭找招牌、顏色特別的建築，默念三遍。</span></li>
+          <li><strong>利用紙筆</strong><span>隨身帶的小卡可以記下家裡地址與家人電話。</span></li>
+          <li><strong>按下報平安按鈕</strong><span>AI 奶奶會記錄最後一次定位，回到有訊號後會通知家人。</span></li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2024 智護生活團隊</p>
+    </footer>
+  </div>
+  <script>
+    (function() {
+      const buttons = document.querySelectorAll('button[data-read]');
+      function speak(text) {
+        if (!('speechSynthesis' in window)) {
+          alert('此裝置不支援語音朗讀，請改以文字閱讀');
+          return;
+        }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-TW';
+        speechSynthesis.cancel();
+        speechSynthesis.speak(utterance);
+      }
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => speak(btn.getAttribute('data-read')));
+      });
+    })();
+  </script>
+</body>
+</html>
