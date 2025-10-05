@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登入｜智護生活</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="top-bar" aria-label="主要導覽">
+      <div class="brand">
+        <span class="brand-logo" aria-hidden="true">AI</span>
+        <h1>智護生活：AI 伴你</h1>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html">首頁</a>
+        <a href="login.html" aria-current="page">登入</a>
+        <a href="registration.html">註冊</a>
+        <a href="guide.html">離線幫助指南</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-label="登入引導">
+        <div>
+          <p class="status-pill">歡迎回來</p>
+          <h2>選擇您的角色，繼續陪伴旅程</h2>
+          <p>支援長者與家屬角色。登入後即可同步提醒、查看健康紀錄與安全資訊。</p>
+        </div>
+      </section>
+
+      <section class="card form-card" aria-labelledby="login-title">
+        <h2 id="login-title">登入帳號</h2>
+        <form>
+          <div>
+            <label for="role">角色</label>
+            <select id="role" name="role">
+              <option value="senior">長者</option>
+              <option value="family">家屬</option>
+              <option value="caregiver">社區照護者</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="email">電子郵件</label>
+            <input id="email" name="email" type="email" placeholder="name@example.com" required>
+          </div>
+
+          <div>
+            <label for="password">密碼</label>
+            <input id="password" name="password" type="password" placeholder="請輸入密碼" required>
+          </div>
+
+          <button class="btn primary" type="submit">登入</button>
+          <p class="helper-text">還沒有帳號？<a href="registration.html">立即註冊</a>。</p>
+        </form>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2024 智護生活團隊</p>
+    </footer>
+  </div>
+</body>
+</html>

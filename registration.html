@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>註冊｜智護生活</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="top-bar" aria-label="主要導覽">
+      <div class="brand">
+        <span class="brand-logo" aria-hidden="true">AI</span>
+        <h1>智護生活：AI 伴你</h1>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html">首頁</a>
+        <a href="login.html">登入</a>
+        <a href="registration.html" aria-current="page">註冊</a>
+        <a href="guide.html">離線幫助指南</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-label="註冊引導">
+        <div>
+          <p class="status-pill">建立專屬照護帳號</p>
+          <h2>3 個步驟完成註冊，啟動智慧陪伴</h2>
+          <p>選擇角色 → 填寫基本資料 → 設定關懷對象，家人與長者皆可輕鬆上手。</p>
+          <div class="progress" role="presentation">
+            <span class="active"></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card form-card" aria-labelledby="register-title">
+        <h2 id="register-title">建立帳號</h2>
+        <form>
+          <div>
+            <label for="register-role">註冊身份</label>
+            <select id="register-role" name="register-role">
+              <option value="senior">長者</option>
+              <option value="family">家屬</option>
+              <option value="caregiver">社工／照護人員</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="name">姓名</label>
+            <input id="name" name="name" type="text" placeholder="請輸入姓名" required>
+          </div>
+
+          <div>
+            <label for="register-email">電子郵件</label>
+            <input id="register-email" name="register-email" type="email" placeholder="name@example.com" required>
+          </div>
+
+          <div>
+            <label for="register-password">密碼</label>
+            <input id="register-password" name="register-password" type="password" placeholder="至少 8 碼，包含數字" required>
+          </div>
+
+          <div>
+            <label for="care-target">關懷對象暱稱</label>
+            <input id="care-target" name="care-target" type="text" placeholder="例如：阿茲奶奶">
+            <p class="helper-text">若為長者本人註冊，可填寫自己的暱稱。</p>
+          </div>
+
+          <button class="btn primary" type="submit">建立帳號</button>
+          <p class="helper-text">註冊即表示同意服務條款與個資安全規範。</p>
+        </form>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2024 智護生活團隊</p>
+    </footer>
+  </div>
+</body>
+</html>
