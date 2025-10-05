@@ -29,3 +29,27 @@
 - 串接語音辨識、穿戴裝置與定位 API，從靜態體驗延伸至可實際操作的原型。
 - 製作更多情境導引（例如醫院就診、搭乘交通工具），讓 AI 陪伴更貼近日常。
 
+
+
+## 後端服務
+
+專案新增 `server/` 目錄，提供 Node.js/Express 的示範後端，整合語音辨識、Gemini 聊天、語音合成、健康資料排行榜以及 GPS 安全圍欄。
+
+### 啟動方式
+
+```bash
+cd server
+npm install
+cp .env.example .env # 填入 GEMINI_API_KEY 與 Google Cloud 認證
+npm run start
+```
+
+服務預設於 `http://localhost:3001` 運行，提供下列 API：
+
+- `POST /api/chat`：接收語音（Base64）或文字訊息，串接 Google Speech-to-Text、Gemini 與 Text-to-Speech，回傳聊天回覆與語音。
+- `GET /api/ranking`：讀取並排序家族健康資料，支援 `metric` 查詢參數（如 `steps`、`medicationAdherence`）。
+- `POST /api/ranking/sync`：更新或新增單一成員的計步、服藥與睡眠資料。
+- `POST /api/geofence/check`：檢查使用者當前定位是否超出安全圍欄，並在超界時產生警示通知。
+- `GET /api/geofence/notifications/:familyId`：查詢家族收到的警示通知。
+
+健康資料預設儲存在 `server/data/healthMetrics.json`，可依實際情境改接資料庫或穿戴裝置 API。

@@ -1,0 +1,26 @@
+[
+  {
+    "userId": "grandma_lan",
+    "displayName": "藍奶奶",
+    "steps": 5234,
+    "medicationAdherence": 0.92,
+    "sleepHours": 7.1,
+    "lastSync": "2024-03-01T09:30:00.000Z"
+  },
+  {
+    "userId": "grandpa_chen",
+    "displayName": "陳爺爺",
+    "steps": 8123,
+    "medicationAdherence": 0.85,
+    "sleepHours": 6.8,
+    "lastSync": "2024-03-01T10:15:00.000Z"
+  },
+  {
+    "userId": "auntie_mei",
+    "displayName": "美阿姨",
+    "steps": 10450,
+    "medicationAdherence": 0.97,
+    "sleepHours": 7.5,
+    "lastSync": "2024-03-01T08:45:00.000Z"
+  }
+]
