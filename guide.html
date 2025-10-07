@@ -3,19 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://localhost:3001; img-src 'self' data:; style-src 'self'; font-src 'self'; script-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
   <title>離線幫助指南｜智護生活</title>
   <link rel="stylesheet" href="assets/css/style.css">
-  <style>
-    .guide-section {
-      display: grid;
-      gap: 1.25rem;
-    }
-    .guide-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-  </style>
+  <script src="assets/js/guide.js" defer></script>
 </head>
 <body>
   <div class="app-shell">
@@ -95,23 +86,5 @@
       <p>© 2024 智護生活團隊</p>
     </footer>
   </div>
-  <script>
-    (function() {
-      const buttons = document.querySelectorAll('button[data-read]');
-      function speak(text) {
-        if (!('speechSynthesis' in window)) {
-          alert('此裝置不支援語音朗讀，請改以文字閱讀');
-          return;
-        }
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'zh-TW';
-        speechSynthesis.cancel();
-        speechSynthesis.speak(utterance);
-      }
-      buttons.forEach(btn => {
-        btn.addEventListener('click', () => speak(btn.getAttribute('data-read')));
-      });
-    })();
-  </script>
 </body>
 </html>

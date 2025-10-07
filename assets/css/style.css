@@ -169,6 +169,17 @@ footer {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
+.guide-section {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .card {
   background: var(--card-bg);
   border-radius: 24px;

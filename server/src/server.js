@@ -22,6 +22,10 @@ app.use('/api/chat', chatRouter)
 app.use('/api/ranking', rankingRouter)
 app.use('/api/geofence', geofenceRouter)
 
+app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
+  res.json({ default_locale: 'en-US' })
+})
+
 app.use((err, req, res, next) => {
   console.error(err)
   res.status(err.status || 500).json({
