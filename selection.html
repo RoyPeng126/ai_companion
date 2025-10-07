@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>選擇陪伴年齡｜智護生活</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="top-bar" aria-label="主要導覽">
+      <div class="brand">
+        <span class="brand-logo" aria-hidden="true">AI</span>
+        <h1>智護生活：AI 伴你</h1>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html">首頁</a>
+        <a href="login.html">登入</a>
+        <a href="selection.html" aria-current="page">陪伴設定</a>
+        <a href="setting.html">快速設定</a>
+        <a href="guide.html">離線幫助指南</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-label="陪伴角色介紹">
+        <div>
+          <p class="status-pill">挑選專屬 AI 夥伴</p>
+          <h2>依照心情與需求選擇聊天夥伴的年齡感</h2>
+          <p>不同年齡的 AI 夥伴具備獨特的語調與對話風格，讓陪伴更貼近真實日常。</p>
+          <p id="persona-status" class="helper-text" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="grid three" aria-label="陪伴角色卡片">
+        <article class="card persona-card" data-persona="child">
+          <h3>活力童年版</h3>
+          <p>充滿好奇與活力，適合想要被逗笑、分享生活趣事的時刻。</p>
+          <p class="helper-text">常用語：一起玩、說故事、問問題。</p>
+          <button class="btn primary persona-pick" type="button" data-persona-target="child">選擇童年版</button>
+        </article>
+        <article class="card persona-card" data-persona="adult">
+          <h3>溫柔青壯版</h3>
+          <p>理解生活壓力與健康管理，陪你聊家務、料理與生活規劃。</p>
+          <p class="helper-text">常用語：一起想辦法、我幫你記錄。</p>
+          <button class="btn primary persona-pick" type="button" data-persona-target="adult">選擇青壯版</button>
+        </article>
+        <article class="card persona-card" data-persona="senior">
+          <h3>智慧長者版</h3>
+          <p>像熟悉的老朋友般傾聽與建議，最懂如何照顧年長者的生活步調。</p>
+          <p class="helper-text">常用語：慢慢來、我陪著你。</p>
+          <button class="btn primary persona-pick" type="button" data-persona-target="senior">選擇長者版</button>
+        </article>
+      </section>
+
+      <section class="card" aria-label="陪伴細節設定">
+        <h2>自訂陪伴風格</h2>
+        <form>
+          <div>
+            <label for="tone">語氣偏好</label>
+            <select id="tone" name="tone">
+              <option>輕鬆幽默</option>
+              <option>穩重陪伴</option>
+              <option>專業關懷</option>
+            </select>
+          </div>
+          <div>
+            <label for="topics">喜愛話題</label>
+            <textarea id="topics" name="topics" placeholder="請輸入想聊的話題，例如：料理、戲劇、健康..."></textarea>
+          </div>
+          <button class="btn secondary" type="submit">儲存偏好</button>
+        </form>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2024 智護生活團隊</p>
+    </footer>
+  </div>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/persona.js"></script>
+</body>
+</html>
