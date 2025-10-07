@@ -46,8 +46,10 @@ router.post('/', async (req, res, next) => {
       context
     })
 
+    const replyText = (reply.text ?? '').trim() || '抱歉，我目前想不到合適的回應，請再說一次。'
+
     const tts = await synthesizeSpeech({
-      text: reply.text,
+      text: replyText,
       languageCode: speechConfig.languageCode ?? 'zh-TW',
       voiceName: speechConfig.voiceName,
       speakingRate: speechConfig.speakingRate ?? 0.9
@@ -57,7 +59,7 @@ router.post('/', async (req, res, next) => {
       persona: reply.persona,
       transcript,
       stt,
-      responseText: reply.text,
+      responseText: replyText,
       audio: tts
     })
   } catch (error) {
