@@ -2,6 +2,7 @@ import express from 'express'
 import bodyParser from 'body-parser'
 import dotenv from 'dotenv'
 import morgan from 'morgan'
+import cors from 'cors'
 
 import chatRouter from './routes/chat.js'
 import rankingRouter from './routes/ranking.js'
@@ -10,6 +11,14 @@ import geofenceRouter from './routes/geofence.js'
 dotenv.config()
 
 const app = express()
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
+  : ['http://localhost:3000']
+
+app.use(cors({
+  origin: allowedOrigins.length ? allowedOrigins : '*',
+  credentials: true
+}))
 app.use(bodyParser.json({ limit: '30mb' }))
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(morgan('dev'))

@@ -1,0 +1,9 @@
+node_modules/
+.env
+.DS_Store
+server/.env
+server/.env.local
+server/.DS_Store
+server/data/
+server/package-lock.json
+server/pnpm-lock.yaml

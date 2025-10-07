@@ -46,6 +46,7 @@
    ```
    - 語音辨識使用 Google Cloud Speech-to-Text，請準備服務帳號憑證（`GOOGLE_APPLICATION_CREDENTIALS` 或 `GOOGLE_APPLICATION_CREDENTIALS_JSON`）。
    - 語音合成在 macOS 上透過系統 `say` 指令輸出 AIFF，再借助 `ffmpeg-static` 轉成 WAV；可用 `say -v '?'` 查看可用 voice，並設定 `TTS_VOICE`。
+   - 預設僅允許 `http://localhost:3000` 前端來源，若需要額外網域請在 `.env` 的 `CORS_ORIGINS` 以逗號加入。
 
 2. **前端（靜態頁面）**
    ```bash
