@@ -446,6 +446,30 @@ tbody td {
   align-items: center;
 }
 
+.persona-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.persona-switcher label {
+  margin: 0;
+  font-weight: 600;
+  color: var(--primary-dark);
+  font-size: 0.9rem;
+}
+
+.persona-switcher select {
+  width: auto;
+  min-width: 140px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(47, 42, 42, 0.15);
+  font-size: 0.95rem;
+  background: #fff;
+}
+
 .chat-status {
   min-height: 1.25rem;
   color: var(--muted);

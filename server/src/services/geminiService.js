@@ -47,24 +47,36 @@ export const generateChatResponse = async ({
   ]
 
   const maxTokensEnv = Number.parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS ?? '', 10)
-  const generationConfig = {
+  const baseGenerationConfig = {
     temperature: 0.6,
     topP: 0.9,
     responseMimeType: 'text/plain'
   }
 
+  let baseMaxOutputTokens = 512
   if (Number.isFinite(maxTokensEnv) && maxTokensEnv > 0) {
-    const safeMin = 256
-    const maxOutputTokens = Math.max(safeMin, maxTokensEnv)
-    if (maxOutputTokens !== maxTokensEnv) {
-      console.warn(`[AI Companion] GEMINI_MAX_OUTPUT_TOKENS=${maxTokensEnv} 過低，已自動調整為 ${maxOutputTokens}。`)
+    const safeMin = 512
+    baseMaxOutputTokens = Math.max(safeMin, maxTokensEnv)
+    if (baseMaxOutputTokens !== maxTokensEnv) {
+      console.warn(`[AI Companion] GEMINI_MAX_OUTPUT_TOKENS=${maxTokensEnv} 過低，已自動調整為 ${baseMaxOutputTokens}。`)
     }
-    generationConfig.maxOutputTokens = maxOutputTokens
-  } else {
-    generationConfig.maxOutputTokens = 512
   }
 
-  const tryGenerate = async (history) => {
+  const maxTokenVariants = Array.from(
+    new Set(
+      [
+        baseMaxOutputTokens,
+        768,
+        1024,
+        1536,
+        2048,
+        3072,
+        4096
+      ].filter(limit => limit && limit >= baseMaxOutputTokens)
+    )
+  )
+
+  const tryGenerate = async (history, maxOutputTokens) => {
     const requestPayload = {
       systemInstruction: {
         role: 'system',
@@ -77,7 +89,10 @@ export const generateChatResponse = async ({
           parts: [{ text: message }]
         }
       ],
-      generationConfig
+      generationConfig: {
+        ...baseGenerationConfig,
+        maxOutputTokens
+      }
     }
 
     const result = await model.generateContent(requestPayload)
@@ -142,30 +157,46 @@ export const generateChatResponse = async ({
 
     const firstFinish = candidates[0]?.finishReason
     if (firstFinish === 'MAX_TOKENS') {
-      return { status: 'retry' }
+      return { status: 'retry_tokens' }
     }
 
     return { status: 'empty' }
   }
 
-  for (const history of historyVariants) {
-    const result = await tryGenerate(history)
-    if (result.status === 'ok') {
-      return {
-        persona,
-        text: result.text
+  let everHitTokenLimit = false
+
+  for (let i = 0; i < maxTokenVariants.length; i += 1) {
+    const maxOutputTokens = maxTokenVariants[i]
+    let sawMaxTokenLimit = false
+
+    for (const history of historyVariants) {
+      const result = await tryGenerate(history, maxOutputTokens)
+      if (result.status === 'ok') {
+        return {
+          persona,
+          text: result.text
+        }
+      }
+      if (result.status === 'blocked') {
+        return {
+          persona,
+          text: result.text
+        }
+      }
+      if (result.status === 'retry_tokens') {
+        sawMaxTokenLimit = true
+        everHitTokenLimit = true
       }
     }
-    if (result.status === 'blocked') {
-      return {
-        persona,
-        text: result.text
-      }
-    }
-    if (result.status === 'retry') {
-      console.warn('[AI Companion] Gemini 達到輸出字數上限，嘗試減少歷史訊息後重試。')
+
+    if (sawMaxTokenLimit && maxTokenVariants[i + 1]) {
+      console.warn(`[AI Companion] Gemini 達到輸出字數上限 (maxOutputTokens=${maxOutputTokens})，嘗試放寬至 ${maxTokenVariants[i + 1]} 後重試。`)
       continue
     }
+  }
+
+  if (everHitTokenLimit) {
+    console.warn('[AI Companion] Gemini 仍回傳 MAX_TOKENS，即使放寬限制仍無法取得內容。')
   }
 
   return {

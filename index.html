@@ -74,6 +74,14 @@
           <div class="chat-window" data-ai-chat>
             <div class="chat-header">
               <p id="chat-persona" class="helper-text"></p>
+              <div class="persona-switcher">
+                <label for="persona-selector">陪聊夥伴版本</label>
+                <select id="persona-selector" name="persona-selector" aria-label="選擇陪聊夥伴版本">
+                  <option value="child">活力童年版</option>
+                  <option value="adult">溫柔青壯版</option>
+                  <option value="senior">智慧長者版</option>
+                </select>
+              </div>
             </div>
             <div class="chat-log" id="chat-log" aria-live="polite"></div>
             <div id="chat-status" class="chat-status helper-text" role="status" aria-live="assertive"></div>

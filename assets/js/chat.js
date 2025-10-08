@@ -8,6 +8,11 @@
     user: "👵",
     ai: "🤖"
   };
+  const PERSONA_LABELS = {
+    child: "活力童年版",
+    adult: "溫柔青壯版",
+    senior: "智慧長者版"
+  };
 
   const chatElement = document.querySelector("[data-ai-chat]");
   if (!chatElement || !window.aiCompanion) return;
@@ -15,6 +20,7 @@
   const logElement = chatElement.querySelector("#chat-log");
   const statusElement = chatElement.querySelector("#chat-status");
   const personaElement = chatElement.querySelector("#chat-persona");
+  const personaSelector = chatElement.querySelector("#persona-selector");
   const memoListElement = chatElement.querySelector("#memo-list");
   const clearMemosButton = chatElement.querySelector("#clear-memos");
   const textarea = chatElement.querySelector("#chat-message");
@@ -157,15 +163,18 @@
     renderMemos();
   };
 
+  const normalizePersona = (key) => (PERSONA_LABELS[key] ? key : "senior");
+
   const updatePersonaLabel = (personaKey) => {
-    if (!personaElement) return;
-    const labels = {
-      child: "活力童年版",
-      adult: "溫柔青壯版",
-      senior: "智慧長者版"
-    };
-    const label = labels[personaKey] ?? labels.senior;
-    personaElement.textContent = `目前陪聊夥伴：${label}`;
+    const normalized = normalizePersona(personaKey);
+    const label = PERSONA_LABELS[normalized];
+    if (personaElement) {
+      personaElement.textContent = `目前陪聊夥伴：${label}`;
+    }
+    if (personaSelector && personaSelector.value !== normalized) {
+      personaSelector.value = normalized;
+    }
+    return normalized;
   };
 
   const enableInputs = (enable) => {
@@ -395,14 +404,29 @@
     clearMemosButton.addEventListener("click", clearMemos);
   }
 
+  if (personaSelector) {
+    personaSelector.addEventListener("change", (event) => {
+      const selected = normalizePersona(event.target.value);
+      window.aiCompanion.setSettings({ persona: selected });
+    });
+  }
+
   window.addEventListener("beforeunload", stopRecorder);
 
   memos = loadMemos();
   renderMemos();
-  updatePersonaLabel(window.aiCompanion.settings.persona);
+  let activePersona = updatePersonaLabel(window.aiCompanion.settings.persona);
 
   window.aiCompanion.subscribeSettings((settings) => {
-    updatePersonaLabel(settings.persona);
+    const normalized = updatePersonaLabel(settings.persona);
+    if (normalized !== activePersona) {
+      activePersona = normalized;
+      conversation = [];
+      if (logElement) {
+        logElement.innerHTML = "";
+      }
+      setStatus(`已切換至${PERSONA_LABELS[normalized]}，開始新的對話吧！`);
+    }
   });
 
   setStatus("說聲你好，開始和 AI 夥伴聊聊吧！");
