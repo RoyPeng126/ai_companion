@@ -1,14 +1,12 @@
+import './config/env.js'
+
 import express from 'express'
 import bodyParser from 'body-parser'
-import dotenv from 'dotenv'
 import morgan from 'morgan'
 import cors from 'cors'
-
 import chatRouter from './routes/chat.js'
 import rankingRouter from './routes/ranking.js'
 import geofenceRouter from './routes/geofence.js'
-
-dotenv.config()
 
 const app = express()
 const allowedOrigins = process.env.CORS_ORIGINS

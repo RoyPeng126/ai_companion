@@ -7,8 +7,10 @@
     persona: "senior",
     speechConfig: {
       languageCode: "zh-TW",
-      voiceName: "",
-      speakingRate: 0.9
+      voiceName: "zh_en_female_1",
+      speakingRate: 1,
+      pitch: 1,
+      energy: 1
     }
   };
 
@@ -22,13 +24,18 @@
         return { ...DEFAULT_SETTINGS };
       }
       const parsed = JSON.parse(stored);
+      const mergedSpeech = {
+        ...DEFAULT_SETTINGS.speechConfig,
+        ...(parsed?.speechConfig ?? {})
+      };
+      if (!mergedSpeech.voiceName) {
+        mergedSpeech.voiceName = DEFAULT_SETTINGS.speechConfig.voiceName;
+      }
+
       return {
         ...DEFAULT_SETTINGS,
         ...parsed,
-        speechConfig: {
-          ...DEFAULT_SETTINGS.speechConfig,
-          ...(parsed?.speechConfig ?? {})
-        }
+        speechConfig: mergedSpeech
       };
     } catch (error) {
       console.warn("[AI Companion] 無法讀取設定，將使用預設值。", error);
@@ -108,6 +115,7 @@
       ...currentSettings,
       ...changes,
       speechConfig: {
+        ...DEFAULT_SETTINGS.speechConfig,
         ...currentSettings.speechConfig,
         ...(changes?.speechConfig ?? {})
       }
@@ -132,4 +140,34 @@
     fetchJson: apiFetch,
     formatTimestamp: formatTime
   };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const menuToggle = document.querySelector("[data-menu-toggle]");
+    const menu = document.querySelector("[data-menu]");
+    if (!menuToggle || !menu) {
+      return;
+    }
+
+    const closeMenu = () => {
+      menu.classList.remove("is-open");
+      menuToggle.setAttribute("aria-expanded", "false");
+    };
+
+    menuToggle.addEventListener("click", () => {
+      const isOpen = menu.classList.toggle("is-open");
+      menuToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    });
+
+    menu.addEventListener("click", (event) => {
+      if (event.target.closest("a")) {
+        closeMenu();
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 720) {
+        closeMenu();
+      }
+    });
+  });
 })();

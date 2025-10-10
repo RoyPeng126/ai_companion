@@ -1,89 +1,138 @@
-import { spawn } from 'node:child_process'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { randomUUID } from 'node:crypto'
-import ffmpegPath from 'ffmpeg-static'
+import '../config/env.js'
 
-const runCommand = (command, args) => new Promise((resolve, reject) => {
-  const child = spawn(command, args, { stdio: 'ignore' })
-  child.once('error', reject)
-  child.once('close', (code) => {
-    if (code === 0) {
-      resolve()
-      return
-    }
-    reject(new Error(`${command} exited with code ${code}`))
-  })
-})
+const API_HOST = (process.env.TTS_API_HOST ?? 'https://tts.api.yating.tw').replace(/\/$/, '')
+const API_KEY = process.env.TTS_API_KEY
+const DEFAULT_MODEL = process.env.TTS_VOICE_MODEL ?? 'zh_en_female_1'
+const DEFAULT_ENCODING = process.env.TTS_AUDIO_ENCODING ?? 'LINEAR16'
+const DEFAULT_SAMPLE_RATE = process.env.TTS_AUDIO_SAMPLE_RATE ?? '22K'
 
-const mapSpeakingRate = (rate) => {
-  if (typeof rate !== 'number' || Number.isNaN(rate)) {
-    return 1
+const clampNumber = (value, { min = 0.5, max = 1.5, fallback = 1 }) => {
+  const num = Number(value)
+  if (!Number.isFinite(num)) {
+    return fallback
   }
-  return Math.min(2, Math.max(0.5, rate))
+  return Math.min(max, Math.max(min, num))
 }
 
-const synthesizeOnMac = async ({ text, voice, speed, outputPath }) => {
-  const aiffPath = `${outputPath}.aiff`
-  const speakingRate = Math.round(mapSpeakingRate(speed) * 200)
-  const sayArgs = ['-o', aiffPath, '-r', String(speakingRate)]
-  if (voice) {
-    sayArgs.push('-v', voice)
+const mapEncodingToMime = (encoding) => {
+  if (!encoding) return 'audio/wav'
+  const normalized = String(encoding).toUpperCase()
+  if (normalized === 'MP3') return 'audio/mpeg'
+  return 'audio/wav'
+}
+
+const buildRequestBody = ({
+  text,
+  inputType,
+  voiceName,
+  speakingRate,
+  pitch,
+  energy,
+  encoding,
+  sampleRate
+}) => ({
+  input: {
+    text,
+    type: inputType
+  },
+  voice: {
+    model: voiceName,
+    speed: clampNumber(speakingRate, { min: 0.5, max: 1.5, fallback: 1 }),
+    pitch: clampNumber(pitch, { min: 0.5, max: 1.5, fallback: 1 }),
+    energy: clampNumber(energy, { min: 0.5, max: 1.5, fallback: 1 })
+  },
+  audioConfig: {
+    encoding,
+    sampleRate
   }
-  sayArgs.push(text)
+})
 
-  await runCommand('say', sayArgs)
-
-  if (!ffmpegPath) {
-    throw new Error('無法取得 ffmpeg 執行檔，請確認已安裝 ffmpeg')
+const parseErrorResponse = async (response) => {
+  try {
+    return await response.json()
+  } catch (_) {
+    const text = await response.text()
+    return { error: text }
   }
+}
 
-  const ffmpegArgs = [
-    '-y',
-    '-i',
-    aiffPath,
-    '-ar',
-    '24000',
-    '-ac',
-    '1',
-    outputPath
-  ]
-
-  await runCommand(ffmpegPath, ffmpegArgs)
+const createTimeoutSignal = (ms) => {
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(ms)
+  }
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(new Error('fetch timeout')), ms)
+  if (typeof timeout.unref === 'function') {
+    timeout.unref()
+  }
+  return controller.signal
 }
 
 export const synthesizeSpeech = async ({
   text,
+  inputType = 'text',
   languageCode = 'zh-TW',
   voiceName,
-  speakingRate = 0.9
+  speakingRate = 1,
+  pitch = 1,
+  energy = 1,
+  encoding = DEFAULT_ENCODING,
+  sampleRate = DEFAULT_SAMPLE_RATE
 }) => {
   if (!text) {
     throw new Error('缺少要轉換的文字內容')
   }
 
-  if (process.platform !== 'darwin') {
-    throw new Error('目前僅支援在 macOS 上進行語音合成')
+  if (!API_KEY) {
+    throw new Error('尚未設定 TTS_API_KEY，請於環境變數中提供 Yating TTS API 金鑰')
   }
 
-  const tmpDir = await mkdtemp(join(tmpdir(), 'ai-companion-tts-'))
-  const filePath = join(tmpDir, `${randomUUID()}.wav`)
-  const voice = voiceName || process.env.TTS_VOICE || null
-  const speed = mapSpeakingRate(speakingRate)
+  const model = voiceName || DEFAULT_MODEL
+  if (!model) {
+    throw new Error('缺少 TTS 聲音模型，請於請求或環境變數 TTS_VOICE_MODEL 中設定')
+  }
 
-  try {
-    await synthesizeOnMac({ text, voice, speed, outputPath: filePath })
-    const audioBuffer = await readFile(filePath)
-    return {
-      audioContent: audioBuffer.toString('base64'),
-      contentType: 'audio/wav',
-      voice: voice ?? 'system-default',
-      languageCode
-    }
-  } catch (error) {
-    throw new Error(`語音合成失敗：${error.message}`)
-  } finally {
-    await rm(tmpDir, { recursive: true, force: true })
+  const body = buildRequestBody({
+    text,
+    inputType,
+    voiceName: model,
+    speakingRate,
+    pitch,
+    energy,
+    encoding,
+    sampleRate
+  })
+
+  const response = await fetch(`${API_HOST}/v2/speeches/short`, {
+    method: 'POST',
+    headers: {
+      key: API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body),
+    signal: createTimeoutSignal(120_000)
+  })
+
+  if (!response.ok) {
+    const errorPayload = await parseErrorResponse(response)
+    throw new Error(
+      `語音合成服務回應錯誤 (${response.status}): ${JSON.stringify(errorPayload)}`
+    )
+  }
+
+  const payload = await response.json()
+
+  if (!payload?.audioContent) {
+    throw new Error('語音合成服務未返回音訊內容')
+  }
+
+  const mimeType = mapEncodingToMime(payload.audioConfig?.encoding ?? encoding)
+
+  return {
+    audioContent: payload.audioContent,
+    contentType: mimeType,
+    voice: model,
+    languageCode,
+    audioConfig: payload.audioConfig ?? { encoding, sampleRate }
   }
 }

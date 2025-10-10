@@ -13,7 +13,11 @@
         <span class="brand-logo" aria-hidden="true">AI</span>
         <h1>智護生活：AI 伴你</h1>
       </div>
-      <nav class="nav-links">
+      <button class="menu-toggle" type="button" aria-controls="site-nav" aria-expanded="false" data-menu-toggle>
+        <span class="sr-only">切換導覽選單</span>
+        <span class="hamburger" aria-hidden="true"></span>
+      </button>
+      <nav id="site-nav" class="nav-links" data-menu>
         <a href="index.html">首頁</a>
         <a href="login.html">登入</a>
         <a href="selection.html">陪伴設定</a>
@@ -72,16 +76,9 @@
         <article class="card">
           <h3>家族暖心回饋</h3>
           <div class="chat-window" data-ai-chat>
-            <div class="chat-header">
-              <p id="chat-persona" class="helper-text"></p>
-              <div class="persona-switcher">
-                <label for="persona-selector">陪聊夥伴版本</label>
-                <select id="persona-selector" name="persona-selector" aria-label="選擇陪聊夥伴版本">
-                  <option value="child">活力童年版</option>
-                  <option value="adult">溫柔青壯版</option>
-                  <option value="senior">智慧長者版</option>
-                </select>
-              </div>
+            <div class="voice-selection">
+              <p class="helper-text">選擇 AI 奶奶回覆時的語音風格：</p>
+              <div class="voice-presets compact" data-voice-options data-voice-variant="compact" role="radiogroup" aria-label="語音風格選項"></div>
             </div>
             <div class="chat-log" id="chat-log" aria-live="polite"></div>
             <div id="chat-status" class="chat-status helper-text" role="status" aria-live="assertive"></div>
@@ -96,8 +93,18 @@
               <label class="sr-only" for="chat-message">輸入訊息</label>
               <textarea id="chat-message" aria-label="輸入訊息" placeholder="說說今天想聊的事..." rows="2"></textarea>
               <div class="chat-actions">
-                <button class="btn secondary" type="button" id="record-toggle">🎙️ 開始錄音</button>
-                <button class="btn primary" type="button" id="send-text">傳送文字</button>
+                <button class="btn icon-only voice-button" type="button" id="record-toggle" aria-label="開始錄音">
+                  <svg class="icon" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v6a3.5 3.5 0 0 0 3.5 3.5Zm5-3.5a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12h-2Z" />
+                  </svg>
+                  <span class="sr-only" data-record-label>開始錄音</span>
+                </button>
+                <button class="btn primary send-button" type="button" id="send-text">
+                  <svg class="icon" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="m17.27 10.74-8.02-4.67a1 1 0 0 0-1.49.86v9.14a1 1 0 0 0 1.5.86l8.02-4.47a1 1 0 0 0-.01-1.72Zm-7.51 3.61V9.66L14.78 12l-5.02 2.35Z"/>
+                  </svg>
+                  <span>傳送</span>
+                </button>
               </div>
             </div>
             <p class="helper-text">按下「開始錄音」說出想提醒的事，系統會自動轉成備忘錄，並由 AI 夥伴語音回覆。</p>
@@ -113,10 +120,11 @@
     </main>
 
     <footer>
-      <p>© 2024 智護生活團隊．以科技帶來有溫度的陪伴</p>
+      <p>© 2025 NCCU=MIS+STAT．以科技帶來有溫度的陪伴</p>
     </footer>
   </div>
   <script src="assets/js/app.js"></script>
+  <script src="assets/js/settings.js"></script>
   <script src="assets/js/chat.js"></script>
 </body>
 </html>

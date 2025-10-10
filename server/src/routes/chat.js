@@ -50,9 +50,14 @@ router.post('/', async (req, res, next) => {
 
     const tts = await synthesizeSpeech({
       text: replyText,
+      inputType: speechConfig.inputType ?? 'text',
       languageCode: speechConfig.languageCode ?? 'zh-TW',
       voiceName: speechConfig.voiceName,
-      speakingRate: speechConfig.speakingRate ?? 0.9
+      speakingRate: speechConfig.speakingRate ?? 1,
+      pitch: speechConfig.pitch ?? 1,
+      energy: speechConfig.energy ?? 1,
+      encoding: speechConfig.encoding,
+      sampleRate: speechConfig.sampleRate
     })
 
     res.json({

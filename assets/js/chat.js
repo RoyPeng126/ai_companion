@@ -26,6 +26,7 @@
   const textarea = chatElement.querySelector("#chat-message");
   const sendButton = chatElement.querySelector("#send-text");
   const recordButton = chatElement.querySelector("#record-toggle");
+  const recordLabel = recordButton?.querySelector("[data-record-label]");
 
   if (!logElement || !statusElement || !textarea || !sendButton || !recordButton || !memoListElement) {
     console.warn("[AI Companion] 聊天所需的元素缺失，無法啟動互動功能。");
@@ -39,6 +40,13 @@
   let audioChunks = [];
   let mediaStream = null;
   let recording = false;
+  const updateRecordButton = (isRecording) => {
+    recordButton.classList.toggle("recording", isRecording);
+    recordButton.setAttribute("aria-label", isRecording ? "停止錄音" : "開始錄音");
+    if (recordLabel) {
+      recordLabel.textContent = isRecording ? "停止錄音" : "開始錄音";
+    }
+  };
 
   const loadMemos = () => {
     try {
@@ -290,8 +298,7 @@
     if (!recording) return;
 
     recording = false;
-    recordButton.classList.remove("recording");
-    recordButton.textContent = "🎙️ 開始錄音";
+    updateRecordButton(false);
 
     if (recorder && recorder.state !== "inactive") {
       recorder.stop();
@@ -342,8 +349,7 @@
 
       recorder.start();
       recording = true;
-      recordButton.classList.add("recording");
-      recordButton.textContent = "■ 停止錄音";
+      updateRecordButton(true);
       setStatus("錄音中，完成後請再次按下停止。");
     } catch (error) {
       console.error("[AI Companion] 無法啟動錄音。", error);

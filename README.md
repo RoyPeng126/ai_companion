@@ -41,11 +41,11 @@
    ```bash
    cd server
    pnpm install
-   cp .env.example .env  # 填好 GEMINI_API_KEY、Google 語音憑證、TTS_VOICE 等變數
+   cp .env.example .env  # 填好 GEMINI_API_KEY、Google 語音憑證、TTS_API_KEY 等變數
    pnpm run dev          # 或 pnpm run start
    ```
    - 語音辨識使用 Google Cloud Speech-to-Text，請準備服務帳號憑證（`GOOGLE_APPLICATION_CREDENTIALS` 或 `GOOGLE_APPLICATION_CREDENTIALS_JSON`）。
-   - 語音合成在 macOS 上透過系統 `say` 指令輸出 AIFF，再借助 `ffmpeg-static` 轉成 WAV；可用 `say -v '?'` 查看可用 voice，並設定 `TTS_VOICE`。
+   - 語音合成透過 [Yating 雲端語音合成 API](https://tts.api.yating.tw)，請於 `.env` 設定 `TTS_API_KEY`，並視需求調整 `TTS_VOICE_MODEL`、`TTS_AUDIO_ENCODING`、`TTS_AUDIO_SAMPLE_RATE`。
    - 預設僅允許 `http://localhost:3000` 前端來源，若需要額外網域請在 `.env` 的 `CORS_ORIGINS` 以逗號加入。
 
 2. **前端（靜態頁面）**
@@ -57,7 +57,7 @@
 
 服務預設於 `http://localhost:3001` 運行，提供下列 API：
 
-- `POST /api/chat`：接收語音（Base64）或文字訊息，透過 Vosk（STT）、Gemini（聊天）與系統 `say`（TTS），回傳聊天回覆與語音。
+- `POST /api/chat`：接收語音（Base64）或文字訊息，透過 Google Speech-to-Text（STT）、Gemini（聊天）與 Yating 語音合成（TTS），回傳聊天回覆與語音。
 - `GET /api/ranking`：讀取並排序家族健康資料，支援 `metric` 查詢參數（如 `steps`、`medicationAdherence`）。
 - `POST /api/ranking/sync`：更新或新增單一成員的計步、服藥與睡眠資料。
 - `POST /api/geofence/check`：檢查使用者當前定位是否超出安全圍欄，並在超界時產生警示通知。

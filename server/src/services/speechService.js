@@ -1,3 +1,4 @@
+import '../config/env.js'
 import { SpeechClient } from '@google-cloud/speech'
 
 let speechClient
