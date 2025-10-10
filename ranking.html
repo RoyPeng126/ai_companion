@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>健康排行榜｜智護生活</title>
-  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=2" />
 </head>
 <body>
   <div class="app-shell">
-    <header class="top-bar" aria-label="主要導覽">
+   <header class="top-bar" aria-label="主要導覽">
       <div class="brand">
         <span class="brand-logo" aria-hidden="true">AI</span>
         <h1>智護生活：AI 伴你</h1>
@@ -19,83 +19,115 @@
       </button>
       <nav id="site-nav" class="nav-links" data-menu>
         <a href="index.html">首頁</a>
-        <a href="ranking.html" aria-current="page">健康排行榜</a>
+        <a href="login.html">登入</a>
+        <a href="selection.html">陪伴設定</a>
+        <a href="ranking.html">健康排行榜</a>
         <a href="forum.html">社群公園</a>
         <a href="guide.html">離線幫助指南</a>
       </nav>
     </header>
 
-    <main>
-      <section class="hero" aria-label="排行榜介紹">
-        <div>
-          <p class="status-pill">彼此激勵．健康同行</p>
-          <h2>家人、鄰居、朋友一起參加的暖心競賽</h2>
-          <p>整合步數、服藥準時度、AI 聊天互動，讓每一份努力都有被看見的舞台。</p>
+    <main class="lb-main">
+      <!-- 頂部 Hero：只留標語 -->
+      <section class="leader-hero">
+        <p class="status-pill">彼此激勵．健康同行．暖心競賽</p>
+
+        <!-- 指標切換：步數 / 服藥 / 聊天 -->
+        <div class="segment" role="tablist" aria-label="選擇顯示指標">
+          <button class="segment__item is-active" role="tab" aria-selected="true" data-metric="steps">步數</button>
+          <button class="segment__item" role="tab" aria-selected="false" data-metric="meds">服藥</button>
+          <button class="segment__item" role="tab" aria-selected="false" data-metric="chat">聊天</button>
+          <span class="segment__thumb" aria-hidden="true"></span>
         </div>
       </section>
 
-      <section class="card ranking-panel" aria-label="家族健康排行榜">
-        <div class="ranking-controls">
-          <div>
-            <h3>家族健康排行榜</h3>
-            <p class="helper-text">即時整合智慧手環與健康紀錄，掌握全家最新狀態。</p>
-          </div>
-          <div class="metric-controls">
-            <label for="metric-select">選擇指標</label>
-            <select id="metric-select" name="metric">
-              <option value="steps">每日步數</option>
-              <option value="medicationAdherence">服藥準時度</option>
-              <option value="sleepHours">睡眠時數</option>
-            </select>
-            <button class="btn secondary" type="button" id="refresh-ranking">重新整理</button>
+      <!-- 前三名舞台 -->
+      <section class="podium" aria-label="前三名">
+        <!-- 第二名（左） -->
+        <div class="podium__item podium--second">
+          <div class="avatar" data-avatar></div>
+          <div class="podium__bar">
+            <span class="podium__label" data-label>—</span>
+            <span class="podium__rank" data-rank>2</span>
           </div>
         </div>
-        <p id="ranking-status" class="helper-text" role="status" aria-live="polite"></p>
-        <div class="ranking-layout">
-          <div class="ranking-table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">名次</th>
-                  <th scope="col">成員</th>
-                  <th scope="col" id="metric-header">指標數值</th>
-                  <th scope="col">最後同步</th>
-                </tr>
-              </thead>
-              <tbody id="ranking-table">
-                <tr>
-                  <td colspan="4">努力讀取資料中...</td>
-                </tr>
-              </tbody>
-            </table>
+
+        <!-- 第一名（中間） -->
+        <div class="podium__item podium--first">
+          <div class="avatar big" data-avatar></div>
+          <div class="podium__bar">
+            <span class="podium__label" data-label>—</span>
+            <span class="podium__rank" data-rank>1</span>
           </div>
-          <div class="ranking-chart" id="ranking-chart">
-            <p class="helper-text">圖表載入中...</p>
+        </div>
+
+        <!-- 第三名（右） -->
+        <div class="podium__item podium--third">
+          <div class="avatar" data-avatar></div>
+          <div class="podium__bar">
+            <span class="podium__label" data-label>—</span>
+            <span class="podium__rank" data-rank>3</span>
           </div>
         </div>
       </section>
 
-      <section class="grid two" aria-label="健康洞察">
-        <article class="card" id="insight-card">
-          <h3>健康洞察</h3>
-          <ul class="list" id="insight-list">
-            <li>等待資料更新...</li>
-          </ul>
-        </article>
-        <article class="card" id="sync-card">
-          <h3>同步概況</h3>
-          <ul class="list" id="sync-list">
-            <li>等待資料更新...</li>
-          </ul>
-        </article>
+      <!-- 舞台下方：名字與分數（左=2名／中=1名／右=3名） -->
+      <div class="stage__scores" aria-label="前三名分數">
+        <div class="score" data-score-box="2">
+          <p class="score__line"><span data-name>—</span>　<span data-score>—</span></p>
+        </div>
+        <div class="score" data-score-box="1">
+          <p class="score__line"><span data-name>—</span>　<span data-score>—</span></p>
+        </div>
+        <div class="score" data-score-box="3">
+          <p class="score__line"><span data-name>—</span>　<span data-score>—</span></p>
+        </div>
+      </div>
+
+
+      <!-- 名次清單 -->
+      <section class="lb-list" aria-label="完整排行榜">
+        <ol id="lb-list" class="lb-list__items"></ol>
+      </section>
+
+     <!-- 同步 + 健康洞察 -->
+      <section class="lb-foot" aria-label="同步與洞察">
+        <div class="sync-box">
+          <button class="btn primary" type="button" id="sync-btn">立即同步</button>
+          <p class="helper-text">同步可更新最新步數／服藥／聊天資訊。</p>
+        </div>
+
+        <div class="insight-box">
+          <!-- 健康洞察（按鈕＋可展開內容） -->
+          <button id="insight-toggle"
+                  class="btn secondary pill"
+                  aria-expanded="false"
+                  aria-controls="insight-panel">
+            健康洞察
+          </button>
+
+          <article id="insight-panel" class="insight-card" hidden>
+            <header>
+              <!-- 這個 h3 會隱藏，避免和按鈕重覆顯示文字 -->
+              <h3 class="sr-only">健康洞察</h3>
+              <a href="guide.html" class="link">查看全部</a>
+            </header>
+            <ul>
+              <li><strong id="insight-best">—</strong> 表現最佳（本指標）</li>
+              <li>家族今日平均：<strong id="insight-avg">—</strong></li>
+              <li>連續達標人數：<strong id="insight-streak">—</strong></li>
+            </ul>
+          </article>
+        </div>
       </section>
     </main>
 
-    <footer>
-      <p>© 2025 NCCU=MIS+STAT</p>
+    <footer class="site-foot">
+      <p>© 2025 NCCU=MIS+STAT!</p>
     </footer>
   </div>
+
+  <script src="assets/js/ranking.js?v=2"></script>
   <script src="assets/js/app.js"></script>
-  <script src="assets/js/ranking.js"></script>
 </body>
 </html>

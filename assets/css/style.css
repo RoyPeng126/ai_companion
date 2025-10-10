@@ -525,6 +525,381 @@ tbody td {
   gap: 0.75rem;
 }
 
+
+.lb-main {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 2.5rem);
+  padding-bottom: clamp(2rem, 5vw, 3rem);
+}
+
+.leader-hero {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 1.5rem;
+  padding: clamp(1.75rem, 5vw, 3rem);
+  text-align: center;
+  color: #fff;
+  border-radius: 28px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  overflow: hidden;
+}
+
+.leader-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.2), transparent 60%);
+  pointer-events: none;
+}
+
+.leader-hero .status-pill {
+  background: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.segment {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: min(100%, 420px);
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.segment__item {
+  flex: 1 1 0;
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.65rem 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.segment__item.is-active {
+  color: var(--primary-dark);
+}
+
+.segment__item:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.segment__thumb {
+  position: absolute;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  left: 0.35rem;
+  width: calc((100% - 0.7rem) / 3);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
+  transition: transform 0.25s ease;
+  pointer-events: none;
+}
+
+.podium {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: clamp(1rem, 3vw, 2rem);
+  align-items: end;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(230, 57, 70, 0.12);
+}
+
+.podium__item {
+  --bar-height: 180px;
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+}
+
+.podium--first {
+  --bar-height: 230px;
+}
+
+.podium--second {
+  --bar-height: 200px;
+}
+
+.podium--third {
+  --bar-height: 170px;
+}
+
+.avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #fff;
+  background: var(--primary-light);
+  box-shadow: 0 12px 24px rgba(230, 57, 70, 0.16);
+  text-transform: uppercase;
+}
+
+.avatar.big {
+  width: 96px;
+  height: 96px;
+  font-size: 1.5rem;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.podium__bar {
+  width: min(100%, 220px);
+  height: var(--bar-height);
+  padding: 1rem 0.75rem;
+  border-radius: 20px 20px 12px 12px;
+  background: linear-gradient(180deg, var(--primary-light) 0%, var(--primary-dark) 100%);
+  display: grid;
+  align-content: flex-end;
+  justify-items: center;
+  gap: 0.5rem;
+  color: #fff;
+  box-shadow: inset 0 -12px 24px rgba(0, 0, 0, 0.12);
+}
+
+.podium__label {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  text-align: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.podium__rank {
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.stage__scores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.score {
+  padding: 1rem 1.5rem;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 16px 32px rgba(230, 57, 70, 0.08);
+}
+
+.score__line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+.lb-list {
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 20px 36px rgba(230, 57, 70, 0.1);
+}
+
+.lb-list__items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.lb-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 18px;
+  background: rgba(230, 57, 70, 0.06);
+}
+
+.lb-row .avatar {
+  width: 52px;
+  height: 52px;
+  font-size: 1.1rem;
+  box-shadow: none;
+}
+
+.badge-rank {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.lb-name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.lb-score {
+  text-align: right;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+.lb-foot {
+  display: grid;
+  gap: 1.5rem;
+  padding: clamp(1.5rem, 4vw, 2.25rem);
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 20px 34px rgba(230, 57, 70, 0.1);
+}
+
+.sync-box {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.lb-foot .btn.primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff;
+  box-shadow: 0 16px 32px rgba(230, 57, 70, 0.22);
+}
+
+.btn.pill {
+  border-radius: 999px;
+}
+
+.lb-foot .btn.secondary {
+  background: rgba(230, 57, 70, 0.08);
+  color: var(--primary-dark);
+  border: 2px solid rgba(230, 57, 70, 0.22);
+}
+
+.insight-box {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.insight-card {
+  padding: 1rem 1.25rem;
+  border-radius: 18px;
+  background: rgba(230, 57, 70, 0.06);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.insight-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.insight-card ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.5rem;
+  color: var(--muted);
+}
+
+.insight-card li {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.insight-card strong {
+  color: var(--primary-dark);
+}
+
+@media (max-width: 960px) {
+  .podium__item {
+    --bar-height: 180px;
+  }
+
+  .podium--first {
+    --bar-height: 210px;
+  }
+}
+
+@media (max-width: 720px) {
+  .leader-hero {
+    padding: 1.75rem 1.25rem;
+    border-radius: 24px;
+  }
+
+  .segment {
+    width: 100%;
+  }
+
+  .podium {
+    padding: 1.5rem;
+  }
+
+  .lb-foot {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 500px) {
+  .segment {
+    padding: 0.3rem;
+  }
+
+  .segment__item {
+    font-size: 0.9rem;
+    padding: 0.6rem 0.4rem;
+  }
+
+  .lb-row {
+    grid-template-columns: auto auto 1fr;
+  }
+
+  .lb-score {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .sync-box {
+    justify-items: stretch;
+  }
+
+  .sync-box .btn {
+    width: 100%;
+  }
+}
+
+
 .chart-row {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -756,6 +1131,39 @@ tbody td {
   border: 0;
 }
 
+.message-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.message-row--ai {
+  justify-content: flex-start;
+}
+
+.message-row--user {
+  justify-content: flex-end;
+}
+
+.message-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(230, 57, 70, 0.1);
+  box-shadow: 0 8px 18px rgba(230, 57, 70, 0.15);
+  flex-shrink: 0;
+  border: 2px solid #fff;
+}
+
+.message-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .message {
   display: inline-flex;
   flex-direction: column;
@@ -777,7 +1185,6 @@ tbody td {
   background: var(--primary);
   color: #fff;
   border-bottom-right-radius: 0;
-  margin-left: auto;
 }
 
 .chat-input {
@@ -790,6 +1197,185 @@ footer {
   text-align: center;
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+/* ======= 健康排行榜樣式 ======= */
+
+/* 主容器間距 */
+.lb-main { padding: 24px; }
+
+/* --- Hero --- */
+.leader-hero{
+  position: relative;
+  border-radius: 20px;
+  padding: 28px 24px 20px;
+  color: #fff;
+  background:
+    radial-gradient(1000px 400px at -5% -20%, rgba(230,62,101,.15), transparent),
+    linear-gradient(135deg, #f07178 0%, #ea526f 60%, #e24c62 100%);
+  margin-bottom: 36px;     /* 避免與 podium 重疊 */
+  overflow: visible;
+}
+.leader-hero h2 { display: none; }
+.leader-hero .status-pill{
+  display:inline-block; padding:6px 12px; border-radius:999px;
+  background: rgba(255,255,255,.25); font-weight:700;
+}
+
+/* --- Segmented control --- */
+.segment{
+  position:relative; display:flex; align-items:stretch;
+  gap:6px; background: rgba(255,255,255,.2); border-radius:999px;
+  padding:6px; margin-top:16px; isolation:isolate;
+}
+.segment__item{
+  position:relative; z-index:1; border:0; background:transparent; color:#fff;
+  padding:10px 0; border-radius:999px; font-weight:800; cursor:pointer;
+  flex:1 1 0; display:flex; align-items:center; justify-content:center;
+}
+.segment__item:is(:focus-visible){ outline:2px solid #fff; outline-offset:2px; }
+.segment__item.is-active{ color:#e24c62; }
+.segment__thumb{
+  position:absolute; inset:6px auto 6px 6px; width:calc((100% - 12px)/3);
+  background:#fff; border-radius:999px; transition:transform .25s ease;
+}
+
+/* --- Podium（底齊、細柱、膠囊名條） --- */
+.podium{
+  display:flex; align-items:flex-end; justify-content:center;
+  gap:28px; margin:12px 0 28px; position:relative; overflow:visible;
+}
+
+/* 清掉可能的上方橫線（若曾存在） */
+.podium::before, .stage-line{ display:none !important; }
+
+.podium__item{ position:relative; display:grid; justify-items:center; }
+.podium__item .avatar{
+  position:absolute; top:-52px; left:50%; transform:translateX(-50%); z-index:3;
+}
+.podium__item .avatar.big{ top:-60px; }
+
+/* 柱身 */
+.podium__bar{
+  width:112px; border-radius:18px 18px 8px 8px;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 10px 24px rgba(0,0,0,.10); overflow:hidden; z-index:1;
+}
+.podium--first  .podium__bar{ height:180px; width:126px; background:#ffd9c6; }
+.podium--second .podium__bar{ height:132px; background:#e9f1ff; }
+.podium--third  .podium__bar{ height:116px; background:#e6ffd6; }
+
+/* 膠囊名字條 */
+.podium__label{
+  position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+  padding:8px 18px; border-radius:999px; white-space:nowrap; line-height:1;
+  color:#fff; font-weight:800; box-shadow:0 3px 10px rgba(0,0,0,.12); z-index:4;
+}
+.podium--first  .podium__label{ background:#ff9f6e; }
+.podium--second .podium__label{ background:#8fb7ff; }
+.podium--third  .podium__label{ background:#8ee26a; }
+
+/* 名次數字 */
+.podium__rank{ font-weight:900; font-size:28px; line-height:1; }
+.podium--first  .podium__rank{ color:#c56b2a; }
+.podium--second .podium__rank{ color:#3b6cd6; }
+.podium--third  .podium__rank{ color:#2c8e2f; }
+
+/* Avatar 基本 */
+.avatar{
+  width:64px; height:64px; border-radius:999px; background:#eee;
+  display:grid; place-items:center; font-weight:800; color:#fff;
+  box-shadow:0 4px 12px rgba(0,0,0,.12); overflow:hidden;
+}
+.avatar.big{ width:76px; height:76px; }
+
+/* --- 舞台下方三個分數 --- */
+.stage__scores{
+  max-width:960px; margin:6px auto 0;
+  display:grid; grid-template-columns:repeat(3,1fr); gap:16px;
+  text-align:center;
+}
+.score__line{ font-weight:700; }
+.score__line [data-score]{ color:#e24c62; font-weight:800; }
+
+/* --- 第4名起列表 --- */
+.lb-list__items{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.lb-row{
+  display:grid; grid-template-columns:36px 56px 1fr auto; gap:12px;
+  align-items:center; background:#fff; border-radius:14px; padding:10px 12px;
+  box-shadow:0 6px 18px rgba(0,0,0,.06);
+}
+.lb-row:nth-child(odd){ background:#fbfbfd; }
+.badge-rank{
+  width:32px; height:32px; border-radius:999px; display:grid; place-items:center;
+  background:#f5f6ff; color:#6b6ef9; font-weight:800;
+}
+.lb-name{ font-weight:700; }
+.lb-score{ font-weight:800; color:#e24c62; }
+
+/* --- 健康洞察 --- */
+/* 膠囊按鈕 */
+.btn.pill{ border-radius:999px; }
+#insight-toggle{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:.8rem 1.4rem; margin:8px 0 12px;
+  background:#fff; border:2px solid #ef657a; color:#ef657a; font-weight:800;
+  box-shadow:0 10px 24px rgba(0,0,0,.06);
+}
+#insight-toggle:focus-visible{ outline:3px solid #ef657a33; outline-offset:2px; }
+
+.lb-foot{ margin-top:18px; position:relative; z-index:1; }
+.insight-card{ margin-top:12px; }
+
+@media (max-width: 500px) {
+  .segment{
+    width: 100%;
+    padding: 8px;
+    gap: 8px;
+  }
+  .segment__item{
+    padding: 8px 0;
+    font-size: 0.9rem;
+  }
+  .podium{
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    padding: 24px 16px 36px;
+  }
+  .podium::after{
+    left: 20%;
+    right: 20%;
+  }
+  .segment__thumb{
+    left: 8px;
+    width: calc((100% - 16px) / 3);
+    top: 8px;
+    bottom: 8px;
+  }
+  .podium__bar{
+    width: 140px;
+  }
+  .stage__scores{
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .lb-row{
+    grid-template-columns: 40px auto 1fr;
+  }
+  .lb-row .avatar{
+    width: 48px;
+    height: 48px;
+  }
+  .lb-score{
+    justify-self: end;
+  }
+}
+
+/* 視覺上隱藏但仍可讀取（如果你在面板裡保留 <h3>） */
+.sr-only{
+  position:absolute !important; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
 }
 
 @media (max-width: 720px) {

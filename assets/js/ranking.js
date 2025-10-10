@@ -1,259 +1,194 @@
-"use strict";
+/* 健康排行榜 - 修正版（對齊 podium 結構，填分數/洞察） */
+const DATA = [
+  { id: 1, name: "小孫", avatar: "", steps: 9200, meds: 3,  chat: 18 },
+  { id: 2, name: "小卓", avatar: "", steps: 8150, meds: 2,  chat: 15 },
+  { id: 3, name: "小彭", avatar: "", steps: 7800, meds: 2,  chat: 11 },
+  { id: 4, name: "阿茲奶奶", avatar: "", steps: 6600, meds: 2,  chat:  9 },
+  { id: 5, name: "小盧", avatar: "", steps: 6400, meds: 1,  chat: 10 },
+  { id: 6, name: "小黃", avatar: "", steps: 5900, meds: 3,  chat:  6 },
+  { id: 7, name: "阿默爺爺", avatar: "", steps: 5400, meds: 1,  chat: 12 },
+];
 
-(function () {
-  if (!window.aiCompanion) return;
+const METRIC_LABEL = { steps: "步數", meds: "服藥", chat: "聊天" };
 
-  const metricSelect = document.querySelector("#metric-select");
-  const refreshButton = document.querySelector("#refresh-ranking");
-  const statusElement = document.querySelector("#ranking-status");
-  const tableBody = document.querySelector("#ranking-table");
-  const metricHeader = document.querySelector("#metric-header");
-  const chartElement = document.querySelector("#ranking-chart");
-  const insightList = document.querySelector("#insight-list");
-  const syncList = document.querySelector("#sync-list");
+const segmentButtons = [...document.querySelectorAll(".segment__item")];
+const thumb = document.querySelector(".segment__thumb");
 
-  if (!metricSelect || !statusElement || !tableBody || !chartElement || !insightList || !syncList || !metricHeader) {
-    console.warn("[AI Companion] 健康排行榜頁面元素缺失，無法載入資料。");
+const podium = document.querySelector(".podium");
+const podiumItems = podium ? [...podium.querySelectorAll(".podium__item")] : [];
+
+const listEl   = document.getElementById("lb-list");
+const syncBtn  = document.getElementById("sync-btn");
+const elBest   = document.getElementById("insight-best");
+const elAvg    = document.getElementById("insight-avg");
+const elStreak = document.getElementById("insight-streak");
+
+
+// 產生圓形頭貼：有圖用圖；沒圖用姓名縮寫 + 彩色底
+function renderAvatar(el, name, url, size = 64) {
+  if (!el) return;
+  if (url) {
+    el.innerHTML = `<img src="${url}" alt="${name}" width="${size}" height="${size}" />`;
     return;
   }
+  const initials = (name || "").trim().slice(0, 2).toUpperCase();
+  // 根據名字做簡單 hash，決定色相，讓每個人顏色一致
+  let hash = 0;
+  for (let i = 0; i < (name || "").length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  el.style.background = `hsl(${hue}, 75%, 55%)`;
+  el.textContent = initials || "🙂";
+}
 
-  const metrics = {
-    steps: {
-      label: "今日步數",
-      chartUnit: "步",
-      format(value) {
-        const safeValue = Number(value ?? 0);
-        return `${Math.round(safeValue).toLocaleString("zh-TW")} 步`;
-      },
-      chartValue(value) {
-        return Math.max(0, Number(value ?? 0));
-      },
-      delta(value) {
-        return `${Math.round(Number(value ?? 0)).toLocaleString("zh-TW")} 步`;
-      }
-    },
-    medicationAdherence: {
-      label: "服藥準時度",
-      chartUnit: "%",
-      format(value) {
-        const safeValue = Number(value ?? 0) * 100;
-        return `${Math.round(safeValue)}%`;
-      },
-      chartValue(value) {
-        return Math.max(0, Number(value ?? 0) * 100);
-      },
-      delta(value) {
-        return `${Math.round(Number(value ?? 0) * 100)} 個百分點`;
-      }
-    },
-    sleepHours: {
-      label: "睡眠時數",
-      chartUnit: "小時",
-      format(value) {
-        const safeValue = Number(value ?? 0);
-        return `${safeValue.toFixed(1)} 小時`;
-      },
-      chartValue(value) {
-        return Math.max(0, Number(value ?? 0));
-      },
-      delta(value) {
-        return `${Number(value ?? 0).toFixed(1)} 小時`;
-      }
-    }
-  };
+/* 生成圓形頭貼（保留圖片；否則用姓名縮寫＋彩色底） */
+function renderStageScores(sorted, metric){
+  const top3 = sorted.slice(0,3);
+  const map  = {2: top3[0], 1: top3[1], 3: top3[2]}; // 2→第二名、1→第一名、3→第三名
+  document.querySelectorAll("[data-score-box]").forEach(box=>{
+    const which = box.getAttribute("data-score-box");
+    const data  = map[which];
+    const nameEl = box.querySelector("[data-name]");
+    const valEl  = box.querySelector("[data-score]");
+    if (!data){ nameEl.textContent="—"; valEl.textContent="—"; return; }
+    nameEl.textContent = data.name;
+    valEl.textContent  = `${data[metric]} ${METRIC_LABEL[metric]==="步數" ? "步" : "次"}`;
+  });
+}
 
-  let currentMetric = metricSelect.value in metrics ? metricSelect.value : "steps";
 
-  const medals = ["🥇", "🥈", "🥉"];
-  const getRankLabel = (rank) => {
-    const medal = medals[rank - 1];
-    return medal ? `${medal} ${rank}` : `${rank}`;
-  };
+/* 排序 */
+function getSorted(metric){ return [...DATA].sort((a,b) => b[metric] - a[metric]); }
 
-  const setStatus = (text, isError = false) => {
-    statusElement.textContent = text;
-    statusElement.classList.toggle("ranking-status-error", isError);
-  };
+/* 渲染前三名頒獎台（膠囊名條 + 數字在柱身） */
+function renderPodium(sorted, metric){
+  const top3 = sorted.slice(0,3);
+  const order = [1,0,2]; // DOM順序：左=第二、 中=第一、右=第三
+  order.forEach((srcIdx, i) => {
+    const item   = podiumItems[i];
+    const data   = top3[srcIdx];
+    const av     = item.querySelector("[data-avatar]");
+    const label  = item.querySelector("[data-label]");
+    const rankEl = item.querySelector("[data-rank]");
+    if (!data){ av.innerHTML=""; label.textContent="—"; rankEl.textContent=i===1? "1": i===0? "2":"3"; return; }
+    renderAvatar(av, data.name, data.avatar, i===1 ? 76 : 64);
+    const displayName = metric === "chat" && data.name === "阿默爺爺" ? "" : data.name;
+    rankEl.textContent = srcIdx===1 ? 1 : (srcIdx===0 ? 2 : 3);
+  });
+}
 
-  const updateMetricHeader = () => {
-    const meta = metrics[currentMetric];
-    metricHeader.textContent = meta.label;
-  };
+/* 舞台下方三個分數框（左=2名／中=1名／右=3名） */
+function renderStageScores(sorted, metric){
+  const top3 = sorted.slice(0,3);
+  const map  = {2: top3[0], 1: top3[1], 3: top3[2]}; // 2→第二名、1→第一名、3→第三名
+  document.querySelectorAll("[data-score-box]").forEach(box=>{
+    const which = box.getAttribute("data-score-box");
+    const data  = map[which];
+    const nameEl = box.querySelector("[data-name]");
+    const valEl  = box.querySelector("[data-score]");
+    nameEl.textContent = data ? data.name : "—";
+    valEl.textContent  = data ? `${data[metric]} ${METRIC_LABEL[metric]==="步數" ? "步":"次"}` : "—";
+  });
+}
 
-  const formatTimestamp = (value) => {
-    if (!value) return "—";
-    return window.aiCompanion.formatTimestamp(value);
-  };
+/* 名單（第4名起） */
+function renderList(sorted, metric){
+  const rest = sorted.slice(3);
+  listEl.innerHTML = rest.map((p, idx) => `
+    <li class="lb-row">
+      <div class="badge-rank">${idx+4}</div>
+      <div class="avatar" data-avatar-list="${p.id}"></div>
+      <div class="lb-name">${p.name}</div>
+      <div class="lb-score">${p[metric]} ${METRIC_LABEL[metric]==="步數" ? "步" : "次"}</div>
+    </li>
+  `).join("");
+  rest.forEach(p => {
+    const el = document.querySelector(`[data-avatar-list="${p.id}"]`);
+    if (el) renderAvatar(el, p.name, p.avatar, 56);
+  });
+}
 
-  const renderTable = (items, meta) => {
-    tableBody.innerHTML = "";
+/* 洞察（簡單統計） */
+function renderInsights(sorted, metric){
+  if (!sorted.length) return;
+  const best = sorted[0];
+  const avg  = Math.round(sorted.reduce((s,x)=>s + x[metric], 0) / sorted.length);
+  const streak = Math.floor(Math.random()*3)+2; // 假資料：2~4 人連續達標
+  if (elBest)   elBest.textContent   = `${best.name}（${best[metric]}${METRIC_LABEL[metric]==="步數"?"步":"次"}）`;
+  if (elAvg)    elAvg.textContent    = `${avg} ${METRIC_LABEL[metric]==="步數"?"步":"次"}`;
+  if (elStreak) elStreak.textContent = `${streak} 人`;
+}
 
-    if (!items.length) {
-      const emptyRow = document.createElement("tr");
-      const cell = document.createElement("td");
-      cell.colSpan = 4;
-      cell.textContent = "尚無統計資料，請稍後再試。";
-      emptyRow.appendChild(cell);
-      tableBody.appendChild(emptyRow);
-      return;
-    }
+/* Segmented Thumb 動畫 */
+function moveThumbTo(index){ if (thumb) thumb.style.transform = `translateX(${index*100}%)`; }
 
-    items.forEach((item) => {
-      const row = document.createElement("tr");
+/* 初始化 + 切換 */
+function render(metric="steps"){
+  const sorted = getSorted(metric);
+  renderPodium(sorted, metric);
+  renderStageScores(sorted, metric);
+  renderList(sorted, metric);
+  renderInsights(sorted, metric);
+}
+render("steps");
 
-      const rankCell = document.createElement("td");
-      rankCell.textContent = getRankLabel(item.rank);
+segmentButtons.forEach((btn, idx) => {
+  btn.addEventListener("click", () => {
+    segmentButtons.forEach(b => b.classList.remove("is-active"));
+    btn.classList.add("is-active");
+    moveThumbTo(idx);
+    render(btn.dataset.metric);
+  });
+});
 
-      const nameCell = document.createElement("td");
-      nameCell.textContent = item.displayName ?? item.userId ?? "匿名成員";
+function renderAvatar(el, name, url, size = 64) {
+  if (!el) return;
+  if (url) {
+    el.innerHTML = `<img src="${url}" alt="${name}" width="${size}" height="${size}" />`;
+    return;
+  }
+  const initials = (name || "").trim().slice(0, 2).toUpperCase();
+  let hash = 0; for (let i = 0; i < (name || "").length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  el.style.background = `hsl(${hue}, 75%, 55%)`;
+  el.textContent = initials || "🙂";
+}
 
-      const metricCell = document.createElement("td");
-      metricCell.textContent = meta.format(item[currentMetric]);
+// 假同步
+if (syncBtn){
+  syncBtn.addEventListener("click", () => {
+    syncBtn.disabled = true;
+    const original = syncBtn.textContent;
+    syncBtn.textContent = "同步中…";
+    setTimeout(() => {
+      syncBtn.textContent = "已同步";
+      setTimeout(() => {
+        syncBtn.textContent = original;
+        syncBtn.disabled = false;
+      }, 1200);
+    }, 1000);
+  });
+}
 
-      const syncCell = document.createElement("td");
-      syncCell.textContent = formatTimestamp(item.lastSync);
+// 健康洞察：按一下切換顯示 / 隱藏（使用 hidden 屬性）
+(() => {
+  const insightBtn   = document.getElementById("insight-toggle");
+  const insightPanel = document.getElementById("insight-panel");
+  if (!insightBtn || !insightPanel) return;
 
-      row.append(rankCell, nameCell, metricCell, syncCell);
-      tableBody.appendChild(row);
-    });
-  };
-
-  const renderChart = (items, meta) => {
-    chartElement.innerHTML = "";
-
-    if (!items.length) {
-      const empty = document.createElement("p");
-      empty.className = "helper-text";
-      empty.textContent = "還沒有資料可以顯示圖表。";
-      chartElement.appendChild(empty);
-      return;
-    }
-
-    const values = items.map((item) => meta.chartValue(item[currentMetric]));
-    const maxValue = Math.max(...values, 0.0001);
-
-    items.forEach((item, index) => {
-      const value = meta.chartValue(item[currentMetric]);
-      const ratio = Math.max(0.05, Math.min(1, value / maxValue));
-
-      const row = document.createElement("div");
-      row.className = "chart-row";
-
-      const name = document.createElement("span");
-      name.className = "chart-name";
-      name.textContent = `${index + 1}. ${item.displayName ?? item.userId ?? "匿名成員"}`;
-
-      const bar = document.createElement("div");
-      bar.className = "chart-bar";
-      const fill = document.createElement("span");
-      fill.style.transform = `scaleX(${ratio})`;
-      bar.appendChild(fill);
-
-      const valueText = document.createElement("span");
-      valueText.className = "chart-value";
-      valueText.textContent = meta.format(item[currentMetric]);
-
-      row.append(name, bar, valueText);
-      chartElement.appendChild(row);
-    });
-  };
-
-  const renderInsights = (items, meta) => {
-    insightList.innerHTML = "";
-
-    if (!items.length) {
-      const empty = document.createElement("li");
-      empty.textContent = "暫時沒有可顯示的洞察。";
-      insightList.appendChild(empty);
-      return;
-    }
-
-    const top = items[0];
-    const bottom = items[items.length - 1];
-    const rawValues = items.map((item) => Number(item[currentMetric] ?? 0));
-    const average = rawValues.reduce((sum, value) => sum + value, 0) / rawValues.length;
-
-    const insights = [];
-
-    insights.push(`目前由 ${top.displayName ?? top.userId ?? "匿名成員"} 暫居第一，${meta.format(top[currentMetric])}。`);
-    insights.push(`全家平均為 ${meta.format(average)}。`);
-
-    const gap = average - Number(bottom[currentMetric] ?? 0);
-    if (gap > 0.01) {
-      insights.push(`${bottom.displayName ?? bottom.userId ?? "匿名成員"} 若再努力 ${meta.delta(gap)} 就能追上平均！`);
+  insightBtn.addEventListener("click", () => {
+    const open = insightBtn.getAttribute("aria-expanded") === "true";
+    if (open) {
+      insightPanel.hidden = true;
+      insightBtn.setAttribute("aria-expanded", "false");
     } else {
-      insights.push("大家表現旗鼓相當，持續保持！");
+      insightPanel.hidden = false;
+      insightBtn.setAttribute("aria-expanded", "true");
+      // 展開時刷新內容
+      const metric = document.querySelector(".segment__item.is-active")?.dataset.metric || "steps";
+      const sorted = getSorted(metric);
+      renderInsights(sorted, metric);
     }
-
-    insights.forEach((text) => {
-      const item = document.createElement("li");
-      item.textContent = text;
-      insightList.appendChild(item);
-    });
-  };
-
-  const renderSyncStatus = (items) => {
-    syncList.innerHTML = "";
-
-    if (!items.length) {
-      const empty = document.createElement("li");
-      empty.textContent = "尚無同步紀錄。";
-      syncList.appendChild(empty);
-      return;
-    }
-
-    items.forEach((item) => {
-      const entry = document.createElement("li");
-      const name = item.displayName ?? item.userId ?? "匿名成員";
-      const time = formatTimestamp(item.lastSync);
-      entry.innerHTML = `<strong>${name}</strong><span>${time || "尚未同步"}</span>`;
-      syncList.appendChild(entry);
-    });
-  };
-
-  const fetchRanking = async () => {
-    const meta = metrics[currentMetric];
-    setStatus("資料讀取中，請稍候...");
-
-    try {
-      const response = await window.aiCompanion.fetchJson(`/ranking?metric=${encodeURIComponent(currentMetric)}`);
-      const items = Array.isArray(response?.items) ? response.items : [];
-
-      renderTable(items, meta);
-      renderChart(items, meta);
-      renderInsights(items, meta);
-      renderSyncStatus(items);
-
-      if (items.length) {
-        const updatedAt = items[0]?.lastSync ? window.aiCompanion.formatTimestamp(items[0].lastSync) : "剛剛";
-        setStatus(`資料已更新（${meta.label}），最後同步：${updatedAt}`);
-      } else {
-        setStatus(`目前沒有 ${meta.label} 的資料，請稍後再試。`);
-      }
-    } catch (error) {
-      console.error("[AI Companion] 無法載入排行榜資料。", error);
-      setStatus("排行榜資料讀取失敗，請稍後再試。", true);
-      tableBody.innerHTML = `
-        <tr>
-          <td colspan="4">無法讀取資料。</td>
-        </tr>
-      `;
-      chartElement.innerHTML = `<p class="helper-text">因資料讀取失敗，無法顯示圖表。</p>`;
-      insightList.innerHTML = `<li>暫時無法取得洞察資料。</li>`;
-      syncList.innerHTML = `<li>同步狀態暫時無法取得。</li>`;
-    }
-  };
-
-  metricSelect.addEventListener("change", () => {
-    currentMetric = metricSelect.value in metrics ? metricSelect.value : "steps";
-    updateMetricHeader();
-    fetchRanking();
   });
-
-  refreshButton?.addEventListener("click", () => {
-    fetchRanking();
-  });
-
-  updateMetricHeader();
-  fetchRanking();
 })();

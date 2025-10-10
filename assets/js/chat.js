@@ -4,9 +4,10 @@
   const MEMO_STORAGE_KEY = "ai-companion.voiceMemos";
   const MAX_CONTEXT_MESSAGES = 10;
   const MAX_MEMOS = 20;
-  const ICONS = {
-    user: "👵",
-    ai: "🤖"
+  const AVATARS = {
+    child: "assets/image/S__164036618.jpg",
+    adult: "assets/image/S__164036619.jpg",
+    senior: "assets/image/S__164036620.jpg"
   };
   const PERSONA_LABELS = {
     child: "活力童年版",
@@ -40,6 +41,7 @@
   let audioChunks = [];
   let mediaStream = null;
   let recording = false;
+  let activePersona = "senior";
   const updateRecordButton = (isRecording) => {
     recordButton.classList.toggle("recording", isRecording);
     recordButton.setAttribute("aria-label", isRecording ? "停止錄音" : "開始錄音");
@@ -82,20 +84,38 @@
     });
   };
 
-  const createMessage = (role, text) => {
-    const wrapper = document.createElement("div");
-    wrapper.className = `message ${role}`;
+  const getAvatarForRole = (role) => {
+    if (role === "ai") {
+      return AVATARS[activePersona] ?? AVATARS.senior;
+    }
+    return null;
+  };
 
-    const icon = document.createElement("span");
-    icon.setAttribute("aria-hidden", "true");
-    icon.textContent = ICONS[role] ?? "";
+  const createMessage = (role, text) => {
+    const row = document.createElement("div");
+    row.className = `message-row message-row--${role}`;
 
     const bubble = document.createElement("div");
+    bubble.className = `message ${role}`;
     bubble.textContent = text;
 
-    wrapper.appendChild(icon);
-    wrapper.appendChild(bubble);
-    logElement.appendChild(wrapper);
+    if (role === "ai") {
+      const avatarUrl = getAvatarForRole(role);
+      if (avatarUrl) {
+        const avatar = document.createElement("div");
+        avatar.className = "message-avatar";
+
+        const img = document.createElement("img");
+        img.src = avatarUrl;
+        img.alt = `${PERSONA_LABELS[activePersona] ?? "AI 夥伴"}頭像`;
+
+        avatar.appendChild(img);
+        row.appendChild(avatar);
+      }
+    }
+
+    row.appendChild(bubble);
+    logElement.appendChild(row);
     scrollLogToBottom();
     return bubble;
   };
@@ -182,6 +202,7 @@
     if (personaSelector && personaSelector.value !== normalized) {
       personaSelector.value = normalized;
     }
+    activePersona = normalized;
     return normalized;
   };
 
@@ -421,12 +442,12 @@
 
   memos = loadMemos();
   renderMemos();
-  let activePersona = updatePersonaLabel(window.aiCompanion.settings.persona);
+  activePersona = updatePersonaLabel(window.aiCompanion.settings.persona);
 
   window.aiCompanion.subscribeSettings((settings) => {
+    const previousPersona = activePersona;
     const normalized = updatePersonaLabel(settings.persona);
-    if (normalized !== activePersona) {
-      activePersona = normalized;
+    if (normalized !== previousPersona) {
       conversation = [];
       if (logElement) {
         logElement.innerHTML = "";
