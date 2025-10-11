@@ -23,72 +23,53 @@ const elBest   = document.getElementById("insight-best");
 const elAvg    = document.getElementById("insight-avg");
 const elStreak = document.getElementById("insight-streak");
 
-
-// 產生圓形頭貼：有圖用圖；沒圖用姓名縮寫 + 彩色底
-function renderAvatar(el, name, url, size = 64) {
-  if (!el) return;
-  if (url) {
-    el.innerHTML = `<img src="${url}" alt="${name}" width="${size}" height="${size}" />`;
-    return;
-  }
-  const initials = (name || "").trim().slice(0, 2).toUpperCase();
-  // 根據名字做簡單 hash，決定色相，讓每個人顏色一致
-  let hash = 0;
-  for (let i = 0; i < (name || "").length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hue = Math.abs(hash) % 360;
-  el.style.background = `hsl(${hue}, 75%, 55%)`;
-  el.textContent = initials || "🙂";
-}
-
-/* 生成圓形頭貼（保留圖片；否則用姓名縮寫＋彩色底） */
-function renderStageScores(sorted, metric){
-  const top3 = sorted.slice(0,3);
-  const map  = {2: top3[0], 1: top3[1], 3: top3[2]}; // 2→第二名、1→第一名、3→第三名
-  document.querySelectorAll("[data-score-box]").forEach(box=>{
-    const which = box.getAttribute("data-score-box");
-    const data  = map[which];
-    const nameEl = box.querySelector("[data-name]");
-    const valEl  = box.querySelector("[data-score]");
-    if (!data){ nameEl.textContent="—"; valEl.textContent="—"; return; }
-    nameEl.textContent = data.name;
-    valEl.textContent  = `${data[metric]} ${METRIC_LABEL[metric]==="步數" ? "步" : "次"}`;
-  });
-}
-
-
 /* 排序 */
 function getSorted(metric){ return [...DATA].sort((a,b) => b[metric] - a[metric]); }
 
-/* 渲染前三名頒獎台（膠囊名條 + 數字在柱身） */
+/* 渲染前三名頒獎台（左=第二、 中=第一、右=第三） */
 function renderPodium(sorted, metric){
   const top3 = sorted.slice(0,3);
-  const order = [1,0,2]; // DOM順序：左=第二、 中=第一、右=第三
-  order.forEach((srcIdx, i) => {
-    const item   = podiumItems[i];
+  const sourceIdx = [1, 0, 2];     // 從 top3 取資料的索引：左取第二、中字第一、右取第三
+  const rankLabels = [2, 1, 3];    // 對應顯示的名次數字
+
+  sourceIdx.forEach((srcIdx, pos) => {
+    const item   = podiumItems[pos];
+    if (!item) return;
+
     const data   = top3[srcIdx];
     const av     = item.querySelector("[data-avatar]");
     const label  = item.querySelector("[data-label]");
     const rankEl = item.querySelector("[data-rank]");
-    if (!data){ av.innerHTML=""; label.textContent="—"; rankEl.textContent=i===1? "1": i===0? "2":"3"; return; }
-    renderAvatar(av, data.name, data.avatar, i===1 ? 76 : 64);
-    const displayName = metric === "chat" && data.name === "阿默爺爺" ? "" : data.name;
-    rankEl.textContent = srcIdx===1 ? 1 : (srcIdx===0 ? 2 : 3);
+
+    if (!data){
+      if (av) av.innerHTML = "";
+      if (label) label.textContent = "—";
+      if (rankEl) rankEl.textContent = String(rankLabels[pos]);
+      return;
+    }
+
+    renderAvatar(av, data.name, data.avatar, pos === 1 ? 76 : 64);
+    if (rankEl) rankEl.textContent = String(rankLabels[pos]);
   });
 }
+
 
 /* 舞台下方三個分數框（左=2名／中=1名／右=3名） */
 function renderStageScores(sorted, metric){
   const top3 = sorted.slice(0,3);
-  const map  = {2: top3[0], 1: top3[1], 3: top3[2]}; // 2→第二名、1→第一名、3→第三名
+  const map  = { 2: top3[1], 1: top3[0], 3: top3[2] };
   document.querySelectorAll("[data-score-box]").forEach(box=>{
     const which = box.getAttribute("data-score-box");
     const data  = map[which];
     const nameEl = box.querySelector("[data-name]");
     const valEl  = box.querySelector("[data-score]");
-    nameEl.textContent = data ? data.name : "—";
-    valEl.textContent  = data ? `${data[metric]} ${METRIC_LABEL[metric]==="步數" ? "步":"次"}` : "—";
+    if (!data){
+      if (nameEl) nameEl.textContent = "—";
+      if (valEl)  valEl.textContent  = "—";
+      return;
+    }
+    if (nameEl) nameEl.textContent = data.name;
+    if (valEl)  valEl.textContent  = `${data[metric]} ${METRIC_LABEL[metric]==="步數" ? "步":"次"}`;
   });
 }
 
