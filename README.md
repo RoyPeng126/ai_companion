@@ -18,6 +18,12 @@
 2. 使用瀏覽器開啟任一 HTML 檔案即可瀏覽對應頁面。
 3. 推薦以行動裝置或平板模擬檢視，體驗高齡友善的大按鈕與高對比介面。
 
+## 互動功能亮點
+
+- 首頁的聊天卡片提供「國語 / 台語」語系切換，會同步更新語音合成設定，確保 AI 回覆使用對應語系的聲線與 `languageCode`。
+- 每個語系皆提供「雅婷、意晴、家豪」三種預設聲線：國語對應 `zh_en_female_1`、`zh_en_female_2`、`zh_en_male_1`，台語對應 `tai_female_1`、`tai_female_2`、`tai_male_1`（支援 16K 取樣）。
+- 使用者選擇會保存於瀏覽器的 `localStorage`，重新整理或改機器仍能延續個人喜好。
+
 ## 設計重點
 
 - 延續紅色系漸層風格，搭配圓角卡片與大字體，提升可讀性。
@@ -44,8 +50,9 @@
    cp .env.example .env  # 填好 GEMINI_API_KEY、Google 語音憑證、TTS_API_KEY 等變數
    pnpm run dev          # 或 pnpm run start
    ```
+   - Windows PowerShell 可改用 `Copy-Item .env.example .env`，傳統命令列使用 `copy .env.example .env`。
    - 語音辨識使用 Google Cloud Speech-to-Text，請準備服務帳號憑證（`GOOGLE_APPLICATION_CREDENTIALS` 或 `GOOGLE_APPLICATION_CREDENTIALS_JSON`）。
-   - 語音合成透過 [Yating 雲端語音合成 API](https://tts.api.yating.tw)，請於 `.env` 設定 `TTS_API_KEY`，並視需求調整 `TTS_VOICE_MODEL`、`TTS_AUDIO_ENCODING`、`TTS_AUDIO_SAMPLE_RATE`。
+   - 語音合成透過 [Yating 雲端語音合成 API](https://tts.api.yating.tw)，請於 `.env` 設定 `TTS_API_KEY`，並視需求調整 `TTS_VOICE_MODEL`、`TTS_AUDIO_ENCODING`、`TTS_AUDIO_SAMPLE_RATE`；目前內建支援國語 `zh_en_*` 與台語 `tai_*` 聲線（台語模型建議使用 16K 取樣）。
    - 預設僅允許 `http://localhost:3000` 前端來源，若需要額外網域請在 `.env` 的 `CORS_ORIGINS` 以逗號加入。
 
 2. **前端（靜態頁面）**
