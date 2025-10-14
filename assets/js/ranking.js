@@ -49,6 +49,7 @@ function renderPodium(sorted, metric){
     }
 
     renderAvatar(av, data.name, data.avatar, pos === 1 ? 76 : 64);
+    if (label)  label.textContent = data.name;
     if (rankEl) rankEl.textContent = String(rankLabels[pos]);
   });
 }

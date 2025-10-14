@@ -306,6 +306,25 @@ footer {
   gap: 0.5rem;
 }
 
+.language-toggle {
+  display: inline-flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.language-toggle .btn {
+  min-width: 4rem;
+  background: rgba(230, 57, 70, 0.12);
+  border-color: rgba(230, 57, 70, 0.35);
+  color: var(--primary-dark);
+}
+
+.language-toggle .btn.is-selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 .btn:hover {
   transform: translateY(-2px);
 }

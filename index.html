@@ -78,6 +78,14 @@
           <div class="chat-window" data-ai-chat>
             <div class="voice-selection">
               <p class="helper-text">選擇 AI 奶奶回覆時的語音風格：</p>
+              <div class="language-toggle" role="group" aria-label="語音語系切換" data-language-options>
+                <button class="btn secondary" type="button" data-language-option="zh-TW" aria-pressed="true">
+                  國語
+                </button>
+                <button class="btn secondary" type="button" data-language-option="nan-TW" aria-pressed="false">
+                  台語
+                </button>
+              </div>
               <div class="voice-presets compact" data-voice-options data-voice-variant="compact" role="radiogroup" aria-label="語音風格選項"></div>
             </div>
             <div class="chat-log" id="chat-log" aria-live="polite"></div>
