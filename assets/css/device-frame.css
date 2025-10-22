@@ -1,0 +1,49 @@
+/* 置中整個頁面 */
+body.mobile-shell {
+  background: #f5f5f5;          /* 外部灰底（可改） */
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif;
+}
+
+/* 手機外框：只有圓角＋陰影，背景透明 */
+.device-frame {
+  width: 100%;
+  max-width: 450px;             /* 手機寬 */
+  border-radius: 40px;
+  overflow: hidden;             /* 讓內頁滿版貼邊 */
+  box-shadow: 0 10px 40px rgba(0,0,0,.12);
+  background: transparent;      /* 不蓋住內頁顏色 */
+}
+
+/* 讓內頁可以全寬鋪滿邊緣（避免左右白邊） */
+.edge-to-edge {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  border-radius: 0 !important;
+}
+/* 手機框：讓內部絕對定位元素以它為錨點 */
+.device-frame {
+  position: relative;   /* ← 新增這行 */
+}
+
+/* 返回鍵：改成相對於「手機框」定位 */
+.back-button{
+  position: absolute;   /* ← 從 fixed 改成 absolute */
+  top: 16px;
+  left: 16px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: .2s;
+  z-index: 10;          /* 保險：蓋在內容上方，但仍在手機框內 */
+}

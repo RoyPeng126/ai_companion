@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>歡迎｜智護生活</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .welcome-container {
+      background: white;
+      border-radius: 40px;
+      max-width: 400px;
+      width: 100%;
+      padding: 40px 30px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      position: relative;
+    }
+
+    /* 左上角 icon */
+    .compass-icon {
+      width: 50px;
+      height: 50px;
+      background: #000;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .compass-icon:hover {
+      background: #333;
+    }
+
+    .compass-icon svg {
+      width: 28px;
+      height: 28px;
+      fill: #fff;
+    }
+
+    .main-image {
+      width: 100%;
+      max-width: 280px;
+      height: auto;
+      margin: 40px auto 30px;
+      display: block;
+      border-radius: 20px;
+      object-fit: cover;
+    }
+
+    .title-group {
+      margin-bottom: 40px;
+    }
+
+    .title-line {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 18px;
+      border: none;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: block;
+      text-align: center;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-login {
+      background: #eb515c;
+      color: #fff;
+    }
+
+    .btn-login:hover {
+      background: #d63f4a;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(235, 81, 92, 0.4);
+    }
+
+    .btn-signup {
+      background: #000;
+      color: #fff;
+    }
+
+    .btn-signup:hover {
+      background: #333;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="welcome-container">
+
+    <!-- 左上角：連結到功能亮點 -->
+    <a href="features.html" class="compass-icon" title="認識功能亮點">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18
+          c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+      </svg>
+    </a>
+
+    <!-- 中間圖片 -->
+    <img src="assets/image/爺爺奶奶互動.jpg" alt="智護生活封面" class="main-image">
+
+    <!-- 標題文字 -->
+    <div class="title-group">
+      <div class="title-line">高齡友善．情感陪伴．安全守護</div>
+      <div class="title-line">長者安心、家人放心的智護體驗</div>
+    </div>
+
+    <!-- 按鈕區 -->
+    <a href="login.html" class="btn btn-login">立即開始</a>
+    <a href="register-role.html" class="btn btn-signup">立即註冊</a>
+  </div>
+</body>
+</html>

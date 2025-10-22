@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <link rel="stylesheet" href="assets/css/device-frame.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>註冊身分｜智護生活</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;
+      background:#f5f5f5;min-height:100vh;padding:20px
+    }
+    .container{max-width:480px;margin:0 auto}
+    .header{padding:40px 20px 30px;text-align:center}
+    .title{font-size:28px;font-weight:700;color:#1a1a1a;margin-bottom:10px}
+    .subtitle{font-size:16px;color:#666;line-height:1.6}
+    .role-cards{display:grid;gap:20px;padding:0 10px}
+
+    .role-card{
+      background:linear-gradient(135deg,var(--bg-start),var(--bg-end));
+      border-radius:20px;padding:30px 25px;display:flex;align-items:center;justify-content:space-between;
+      cursor:pointer;transition:.3s;box-shadow:0 4px 15px rgba(0,0,0,.1);text-decoration:none;position:relative;overflow:hidden
+    }
+    .role-card:hover{transform:translateY(-5px);box-shadow:0 8px 25px rgba(0,0,0,.15)}
+    .role-card::before{
+      content:"";position:absolute;top:-50%;right:-20%;width:200px;height:200px;background:rgba(255,255,255,.1);border-radius:50%
+    }
+    .role-card.grandpa{--bg-start:#FF6B6B;--bg-end:#FF8E53}
+    .role-card.grandma{--bg-start:#FFB88C;--bg-end:#FFAB73}
+    .role-card.family{--bg-start:#FFA07A;--bg-end:#FF7F50}
+    .role-card.social-worker{--bg-start:#F4A460;--bg-end:#E89950}
+
+    .role-content{flex:1;position:relative;z-index:2}
+    .role-title{font-size:24px;font-weight:700;color:#fff;margin-bottom:8px}
+    .role-description{font-size:14px;color:rgba(255,255,255,.9);line-height:1.4}
+
+    .role-icon{width:80px;height:80px;position:relative;z-index:2}
+
+    .back-button{
+      position:absolute;top:20px;left:20px;width:40px;height:40px;background:#fff;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;
+      box-shadow:0 2px 10px rgba(0,0,0,.1);transition:.2s;z-index:100
+    }
+    .back-button:hover{background:#f5f5f5;transform:scale(1.05)}
+    .back-button svg{width:24px;height:24px;fill:#1a1a1a}
+  </style>
+</head>
+
+<body>
+ <body class="mobile-shell">
+    <div class="device-frame">
+    <!-- 返回：回到歡迎頁 -->
+    <a href="welcome.html" style="text-decoration:none">
+        <button class="back-button" type="button" aria-label="返回">
+        <svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+    </a>
+
+    <div class="container">
+        <div class="header">
+        <h1 class="title">註冊身分</h1>
+        <p class="subtitle">請選擇您的身分，我們將為您提供最適合的服務</p>
+        </div>
+
+        <div class="role-cards">
+        <!-- 爺爺 -->
+        <a href="registration.html?role=grandpa" class="role-card grandpa" aria-label="選擇爺爺">
+            <div class="role-content">
+            <div class="role-title">爺爺</div>
+            <div class="role-description">獲得貼心的健康提醒與陪伴</div>
+            </div>
+            <svg class="role-icon" viewBox="0 0 200 200" aria-hidden="true">
+            <circle cx="100" cy="70" r="35" fill="white" opacity="0.9"/>
+            <rect x="70" y="100" width="60" height="70" rx="10" fill="white" opacity="0.9"/>
+            <circle cx="85" cy="65" r="3" fill="#333"/><circle cx="115" cy="65" r="3" fill="#333"/>
+            <path d="M90,80 Q100,85 110,80" stroke="#333" stroke-width="2" fill="none"/>
+            <rect x="75" y="45" width="50" height="15" rx="7" fill="#8B4513" opacity="0.8"/>
+            </svg>
+        </a>
+
+        <!-- 奶奶 -->
+        <a href="registration.html?role=grandma" class="role-card grandma" aria-label="選擇奶奶">
+            <div class="role-content">
+            <div class="role-title">奶奶</div>
+            <div class="role-description">享受溫暖的 AI 陪伴與關懷</div>
+            </div>
+            <svg class="role-icon" viewBox="0 0 200 200" aria-hidden="true">
+            <circle cx="100" cy="70" r="35" fill="white" opacity="0.9"/>
+            <rect x="70" y="100" width="60" height="70" rx="10" fill="white" opacity="0.9"/>
+            <circle cx="85" cy="65" r="3" fill="#333"/><circle cx="115" cy="65" r="3" fill="#333"/>
+            <path d="M90,80 Q100,85 110,80" stroke="#333" stroke-width="2" fill="none"/>
+            <circle cx="70" cy="55" r="12" fill="#8B4513" opacity="0.8"/>
+            <circle cx="130" cy="55" r="12" fill="#8B4513" opacity="0.8"/>
+            </svg>
+        </a>
+
+        <!-- 家人 -->
+        <a href="registration.html?role=family" class="role-card family" aria-label="選擇家人">
+            <div class="role-content">
+            <div class="role-title">家人</div>
+            <div class="role-description">隨時掌握長輩的健康與安全</div>
+            </div>
+            <svg class="role-icon" viewBox="0 0 200 200" aria-hidden="true">
+            <circle cx="80" cy="60" r="25" fill="white" opacity="0.9"/>
+            <circle cx="120" cy="60" r="25" fill="white" opacity="0.9"/>
+            <rect x="60" y="85" width="35" height="50" rx="8" fill="white" opacity="0.9"/>
+            <rect x="105" y="85" width="35" height="50" rx="8" fill="white" opacity="0.9"/>
+            <path d="M70,100 L75,140 L85,140 L90,100" fill="white" opacity="0.7"/>
+            <path d="M110,100 L115,140 L125,140 L130,100" fill="white" opacity="0.7"/>
+            </svg>
+        </a>
+
+        <!-- 社工 -->
+        <a href="registration.html?role=social-worker" class="role-card social-worker" aria-label="選擇社工">
+            <div class="role-content">
+            <div class="role-title">社工</div>
+            <div class="role-description">專業管理與照護服務支援</div>
+            </div>
+            <svg class="role-icon" viewBox="0 0 200 200" aria-hidden="true">
+            <circle cx="100" cy="70" r="35" fill="white" opacity="0.9"/>
+            <rect x="70" y="100" width="60" height="70" rx="10" fill="white" opacity="0.9"/>
+            <circle cx="85" cy="65" r="3" fill="#333"/><circle cx="115" cy="65" r="3" fill="#333"/>
+            <path d="M90,80 Q100,85 110,80" stroke="#333" stroke-width="2" fill="none"/>
+            <path d="M80,50 L100,40 L120,50" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>
+            <rect x="90" y="110" width="20" height="25" fill="#FF6B6B" opacity="0.6"/>
+            </svg>
+        </a>
+        </div>
+    </div>
+  </div>
+ </body>
+</body>
+</html>
