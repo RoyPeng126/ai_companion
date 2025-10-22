@@ -119,6 +119,19 @@
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
     }
+
+    .btn-trial {
+      background: #fff;
+      color: #1a1a1a;
+      border: 2px solid #000;
+    }
+
+    .btn-trial:hover {
+      background: #000;
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    }
   </style>
 </head>
 <body>
@@ -144,6 +157,22 @@
     <!-- 按鈕區 -->
     <a href="login.html" class="btn btn-login">立即開始</a>
     <a href="register-role.html" class="btn btn-signup">立即註冊</a>
+    <a href="index.html" class="btn btn-trial" data-trial-button>試用版</a>
   </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const storageKey = 'ai-companion-skip-welcome'
+      const trialButton = document.querySelector('[data-trial-button]')
+      if (trialButton) {
+        trialButton.addEventListener('click', () => {
+          try {
+            sessionStorage.setItem(storageKey, 'true')
+          } catch (error) {
+            // Ignore storage errors; navigation will proceed.
+          }
+        })
+      }
+    })
+  </script>
 </body>
 </html>
