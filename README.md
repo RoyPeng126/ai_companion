@@ -1,21 +1,21 @@
 # 智護生活：AI 伴你
 
-這是一款為高齡者打造的概念網站，示範「AI 奶奶」如何透過語音備忘錄、AI 陪聊、健康排行榜與 GPS 安全守護，協助長者在家安心、外出放心。
+這是一款為高齡者打造的概念網站，示範「AI 奶奶」如何透過語音備忘錄、AI 陪聊、健康排行榜與 GPS 安全守護，協助長者在家安心、外出放心。前端靜態檔案已集中於 `frontend/` 目錄，與 `backend/` 後端分離。
 
 ## 可用頁面
 
-- `index.html`：首頁，展示服務願景、功能亮點與陪伴情境。
-- `login.html` / `registration.html`：長者與家屬可登入或註冊帳號，啟動個人化陪伴。
-- `selection.html`：選擇 AI 夥伴的年齡感與語氣風格。
-- `setting.html`：一步一步完成提醒、活動與安全圍欄設定。
-- `ranking.html`：以排行榜形式檢視步數與服藥準時度，鼓勵家人朋友互相加油。
-- `forum.html`：社群公園，分享活動與暖心話題。
-- `guide.html`：離線可用的安全指南，提供可朗讀的求助資訊與自救步驟。
+- `frontend/index.html`：首頁，展示服務願景、功能亮點與陪伴情境。
+- `frontend/login.html` / `frontend/registration.html`：長者與家屬可登入或註冊帳號，啟動個人化陪伴。
+- `frontend/selection.html`：選擇 AI 夥伴的年齡感與語氣風格。
+- `frontend/setting.html`：一步一步完成提醒、活動與安全圍欄設定。
+- `frontend/ranking.html`：以排行榜形式檢視步數與服藥準時度，鼓勵家人朋友互相加油。
+- `frontend/forum.html`：社群公園，分享活動與暖心話題。
+- `frontend/guide.html`：離線可用的安全指南，提供可朗讀的求助資訊與自救步驟。
 
 ## 使用方式
 
 1. 下載或 clone 專案。
-2. 使用瀏覽器開啟任一 HTML 檔案即可瀏覽對應頁面。
+2. 進入 `frontend/` 目錄，使用瀏覽器開啟任一 HTML 檔案即可瀏覽對應頁面。
 3. 推薦以行動裝置或平板模擬檢視，體驗高齡友善的大按鈕與高對比介面。
 
 ## 互動功能亮點
@@ -39,13 +39,13 @@
 
 ## 後端服務
 
-專案新增 `server/` 目錄，提供 Node.js/Express 的示範後端，整合語音辨識、Gemini 聊天、語音合成、健康資料排行榜以及 GPS 安全圍欄。
+專案新增 `backend/` 目錄，提供 Node.js/Express 的示範後端，整合語音辨識、Gemini 聊天、語音合成、健康資料排行榜以及 GPS 安全圍欄。
 
 ### 啟動方式
 
 1. **後端（Node.js/Express）**
    ```bash
-   cd server
+   cd backend
    pnpm install
    cp .env.example .env  # 填好 GEMINI_API_KEY、Google 語音憑證、TTS_API_KEY 等變數
    pnpm run dev          # 或 pnpm run start
@@ -57,8 +57,9 @@
 
 2. **前端（靜態頁面）**
    ```bash
+   cd frontend
    pnpm dlx serve -l 3000   # 或任何靜態伺服器，例如 python -m http.server 3000
-   # 於專案根目錄執行，瀏覽器開 http://localhost:3000
+   # 於 frontend 目錄執行，瀏覽器開 http://localhost:3000
    ```
    - 前端會向 `http://localhost:3001/api/...` 發送請求，必要時請在後端設定 CORS。
 
@@ -70,4 +71,4 @@
 - `POST /api/geofence/check`：檢查使用者當前定位是否超出安全圍欄，並在超界時產生警示通知。
 - `GET /api/geofence/notifications/:familyId`：查詢家族收到的警示通知。
 
-健康資料預設儲存在 `server/data/healthMetrics.json`，可依實際情境改接資料庫或穿戴裝置 API。
+健康資料預設儲存在 `backend/data/healthMetrics.json`，可依實際情境改接資料庫或穿戴裝置 API。
