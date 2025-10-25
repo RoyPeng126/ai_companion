@@ -43,7 +43,11 @@
       </nav>
       <div class="user-menu" id="userMenu" aria-label="使用者選單">
         <button class="avatar-btn" id="avatarBtn" aria-haspopup="menu" aria-expanded="false" title="使用者選單">
-          <span class="avatar-initials" id="avatarInitials">U</span>
+          <span class="sr-only">開啟使用者選單</span>
+          <span class="avatar-frame">
+            <img class="avatar-image" id="avatarImage" alt="使用者頭像" hidden>
+            <span class="avatar-initials" id="avatarInitials">U</span>
+          </span>
         </button>
         <div class="menu-dropdown" id="userDropdown" hidden>
           <div class="user-header">
@@ -159,6 +163,7 @@
       const btn = document.getElementById('avatarBtn')
       const dd = document.getElementById('userDropdown')
       const initialsEl = document.getElementById('avatarInitials')
+      const avatarImg = document.getElementById('avatarImage')
       const nameEl = document.getElementById('umName')
       const emailEl = document.getElementById('umEmail')
       const logoutBtn = document.getElementById('umLogout')
@@ -177,9 +182,22 @@
           const json = await res.json()
           const user = json.user || {}
           const display = user.full_name || user.username || user.email || '使用者'
-          nameEl.textContent = display
-          emailEl.textContent = user.email || ''
-          initialsEl.textContent = toInitials(display)
+          const avatarUrl = user.avatar_url || user.avatar
+          if (nameEl) nameEl.textContent = display
+          if (emailEl) emailEl.textContent = user.email || ''
+          if (initialsEl) initialsEl.textContent = toInitials(display)
+          if (avatarImg) {
+            if (avatarUrl) {
+              avatarImg.src = avatarUrl
+              avatarImg.alt = `${display} 的頭像`
+              avatarImg.hidden = false
+              if (initialsEl) initialsEl.hidden = true
+            } else {
+              avatarImg.removeAttribute('src')
+              avatarImg.hidden = true
+              if (initialsEl) initialsEl.hidden = false
+            }
+          }
         } catch {}
       }
 

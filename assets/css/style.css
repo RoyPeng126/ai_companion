@@ -101,6 +101,116 @@ footer {
   transform: translateY(-2px);
 }
 
+.user-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.avatar-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+}
+
+.avatar-frame {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #fff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(135deg, rgba(230, 57, 70, 0.25) 0%, rgba(230, 57, 70, 0.6) 100%);
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.avatar-btn:hover .avatar-frame {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-initials {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  width: min(260px, 80vw);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 44px rgba(15, 23, 42, 0.18);
+  padding: 0.75rem 0;
+  z-index: 20;
+}
+
+.menu-dropdown::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  right: 16px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  transform: rotate(45deg);
+  box-shadow: -2px -2px 8px rgba(15, 23, 42, 0.08);
+  border-radius: 4px 0 0 0;
+  pointer-events: none;
+}
+
+.user-header {
+  padding: 0.75rem 1.25rem 1rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.user-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.user-email {
+  margin-top: 0.25rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 1.25rem;
+  text-align: left;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: rgba(230, 57, 70, 0.08);
+}
+
 .menu-toggle {
   display: none;
   align-items: center;
