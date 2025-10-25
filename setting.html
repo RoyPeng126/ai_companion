@@ -97,5 +97,125 @@
   </div>
   <script src="assets/js/app.js"></script>
   <script src="assets/js/settings.js"></script>
+  <script src="assets/js/toast.js"></script>
+  <script>
+    (function initAccountSettings(){
+      const API_BASE = (localStorage.getItem('AI_COMPANION_API_BASE') || 'http://localhost:3001').replace(/\/$/, '')
+
+      async function fetchMe() {
+        try {
+          const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
+          if (!res.ok) {
+            location.href = 'login.html?error=login_required'
+            return null
+          }
+          const { user } = await res.json()
+          return user
+        } catch {
+          location.href = 'login.html?error=login_required'
+          return null
+        }
+      }
+
+      function ensureForms() {
+        // Account profile form (create if missing)
+        let profileCard = document.getElementById('account-card')
+        if (!profileCard) {
+          const main = document.querySelector('main') || document.body
+          profileCard = document.createElement('section')
+          profileCard.className = 'card'
+          profileCard.id = 'account-card'
+          profileCard.innerHTML = `
+            <h2>帳號資訊</h2>
+            <form id="profileForm">
+              <div><label>姓名</label><input id="full_name" name="full_name" type="text"></div>
+              <div><label>電子郵件</label><input id="email" name="email" type="email"></div>
+              <div><label>使用者名稱</label><input id="username" name="username" type="text"></div>
+              <div><label>年齡</label><input id="age" name="age" type="number" min="0"></div>
+              <div><label>電話</label><input id="phone" name="phone" type="tel"></div>
+              <div><label>地址</label><input id="address" name="address" type="text"></div>
+              <button class="btn primary" type="submit">儲存</button>
+            </form>`
+          main.appendChild(profileCard)
+        }
+
+        let pwCard = document.getElementById('password-card')
+        if (!pwCard) {
+          const main = document.querySelector('main') || document.body
+          pwCard = document.createElement('section')
+          pwCard.className = 'card'
+          pwCard.id = 'password-card'
+          pwCard.innerHTML = `
+            <h2>變更密碼</h2>
+            <form id="passwordForm">
+              <div><label>目前密碼</label><input id="currentPassword" name="currentPassword" type="password" required></div>
+              <div><label>新密碼</label><input id="newPassword" name="newPassword" type="password" required></div>
+              <div><label>確認新密碼</label><input id="confirmNewPassword" name="confirmNewPassword" type="password" required></div>
+              <button class="btn primary" type="submit">更新密碼</button>
+            </form>`
+          main.appendChild(pwCard)
+        }
+      }
+
+      async function bootstrap() {
+        ensureForms()
+        const user = await fetchMe()
+        if (!user) return
+        // Fill profile fields
+        const byId = (id) => document.getElementById(id)
+        if (byId('full_name')) byId('full_name').value = user.full_name || ''
+        if (byId('email')) byId('email').value = user.email || ''
+        if (byId('username')) byId('username').value = user.username || ''
+        if (byId('age')) byId('age').value = user.age ?? ''
+        if (byId('phone')) byId('phone').value = user.phone || ''
+        if (byId('address')) byId('address').value = user.address || ''
+
+        // Bind submit events
+        const profileForm = document.getElementById('profileForm')
+        if (profileForm) profileForm.addEventListener('submit', async (e) => {
+          e.preventDefault()
+          const payload = Object.fromEntries(new FormData(profileForm).entries())
+          // Clean empty strings to undefined so PATCH can detect
+          Object.keys(payload).forEach(k => { if (payload[k] === '') delete payload[k] })
+          try {
+            const res = await fetch(`${API_BASE}/api/users/me`, {
+              method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+              credentials: 'include', body: JSON.stringify(payload)
+            })
+            if (res.ok) { if (window.showToast) showToast('已更新', { variant: 'success' }); location.reload() }
+            else {
+              const err = await res.json().catch(()=>({}))
+              const msg = err.error === 'email_taken' ? 'Email 已被使用' : err.error === 'username_taken' ? '使用者名稱已被使用' : '更新失敗'
+              if (window.showToast) showToast(msg, { variant: 'error' }); else alert(msg)
+            }
+          } catch { alert('更新失敗') }
+        })
+
+        const passwordForm = document.getElementById('passwordForm')
+        if (passwordForm) passwordForm.addEventListener('submit', async (e) => {
+          e.preventDefault()
+          const currentPassword = document.getElementById('currentPassword').value
+          const newPassword = document.getElementById('newPassword').value
+          const confirm = document.getElementById('confirmNewPassword').value
+          if (!newPassword || newPassword.length < 8) { alert('新密碼至少 8 碼'); return }
+          if (newPassword !== confirm) { alert('新密碼與確認不一致'); return }
+          try {
+            const res = await fetch(`${API_BASE}/api/auth/change-password`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              credentials: 'include', body: JSON.stringify({ currentPassword, newPassword })
+            })
+            if (res.ok) { if (window.showToast) showToast('已更新密碼，請重新登入', { variant: 'success' }); location.href = 'login.html?error=login_required' }
+            else {
+              const err = await res.json().catch(()=>({}))
+              const msg = err.error === 'wrong_password' ? '目前密碼不正確' : '更新失敗'
+              if (window.showToast) showToast(msg, { variant: 'error' }); else alert(msg)
+            }
+          } catch { alert('更新失敗') }
+        })
+      }
+
+      document.addEventListener('DOMContentLoaded', bootstrap)
+    })()
+  </script>
 </body>
 </html>

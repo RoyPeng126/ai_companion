@@ -41,6 +41,19 @@
         <a href="forum.html">社群公園</a>
         <a href="guide.html">離線幫助指南</a>
       </nav>
+      <div class="user-menu" id="userMenu" aria-label="使用者選單">
+        <button class="avatar-btn" id="avatarBtn" aria-haspopup="menu" aria-expanded="false" title="使用者選單">
+          <span class="avatar-initials" id="avatarInitials">U</span>
+        </button>
+        <div class="menu-dropdown" id="userDropdown" hidden>
+          <div class="user-header">
+            <div class="user-name" id="umName">使用者</div>
+            <div class="user-email" id="umEmail"></div>
+          </div>
+          <a class="menu-item" href="setting.html" id="umAccount">帳號設定</a>
+          <button class="menu-item" id="umLogout" type="button">登出</button>
+        </div>
+      </div>
     </header>
 
     <main>
@@ -127,5 +140,80 @@
   <script src="assets/js/app.js"></script>
   <script src="assets/js/settings.js"></script>
   <script src="assets/js/chat.js"></script>
+  <script>
+    (async function guardAuth() {
+      const API_BASE = (localStorage.getItem('AI_COMPANION_API_BASE') || 'http://localhost:3001').replace(/\/$/, '')
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
+        if (!res.ok) {
+          location.href = 'login.html?error=login_required'
+        }
+      } catch (e) {
+        location.href = 'login.html?error=login_required'
+      }
+    })()
+  </script>
+  <script>
+    (function initUserMenu(){
+      const API_BASE = (localStorage.getItem('AI_COMPANION_API_BASE') || 'http://localhost:3001').replace(/\/$/, '')
+      const btn = document.getElementById('avatarBtn')
+      const dd = document.getElementById('userDropdown')
+      const initialsEl = document.getElementById('avatarInitials')
+      const nameEl = document.getElementById('umName')
+      const emailEl = document.getElementById('umEmail')
+      const logoutBtn = document.getElementById('umLogout')
+
+      function toInitials(name) {
+        if (!name) return 'U'
+        const parts = String(name).trim().split(/\s+/)
+        if (parts.length === 1) return parts[0].slice(0,2).toUpperCase()
+        return (parts[0][0] + parts[1][0]).toUpperCase()
+      }
+
+      async function loadUser(){
+        try {
+          const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
+          if (!res.ok) return
+          const json = await res.json()
+          const user = json.user || {}
+          const display = user.full_name || user.username || user.email || '使用者'
+          nameEl.textContent = display
+          emailEl.textContent = user.email || ''
+          initialsEl.textContent = toInitials(display)
+        } catch {}
+      }
+
+      function openMenu() {
+        dd.hidden = false
+        btn.setAttribute('aria-expanded','true')
+        document.addEventListener('click', onDocClick)
+        document.addEventListener('keydown', onEsc)
+      }
+      function closeMenu() {
+        dd.hidden = true
+        btn.setAttribute('aria-expanded','false')
+        document.removeEventListener('click', onDocClick)
+        document.removeEventListener('keydown', onEsc)
+      }
+      function onDocClick(e){
+        if (!dd.contains(e.target) && !btn.contains(e.target)) closeMenu()
+      }
+      function onEsc(e){ if (e.key === 'Escape') closeMenu() }
+
+      if (btn) btn.addEventListener('click', (e)=>{
+        e.stopPropagation()
+        dd.hidden ? openMenu() : closeMenu()
+      })
+
+      if (logoutBtn) logoutBtn.addEventListener('click', async ()=>{
+        try {
+          await fetch(`${API_BASE}/api/auth/logout`, { method:'POST', credentials:'include' })
+        } catch {}
+        location.href = 'login.html?error=login_required'
+      })
+
+      loadUser()
+    })()
+  </script>
 </body>
 </html>

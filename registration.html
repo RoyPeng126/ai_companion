@@ -6,361 +6,110 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>建立帳號｜智護生活</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif;
-      background: #f5f5f5;
-      min-height: 100vh;
-    }
-
-    .register-container {
-      max-width: 480px;
-      width: 100%;
-      margin: 0 auto;
-      min-height: 100vh;
-      background: #fff;
-      position: relative;
-    }
-
-    /* 紅色頭部區域 */
-    .header-section {
-      background: linear-gradient(135deg, #eb515c 0%, #d63f4a 100%);
-      color: #fff;
-      padding: 20px 30px 100px;
-      position: relative;
-      text-align: center;
-      z-index: 1;
-    }
-
-    .back-button {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      width: 40px;
-      height: 40px;
-      border: none;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      text-decoration: none;
-      transition: 0.2s;
-    }
-
-    .back-button:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    .back-button svg {
-      width: 24px;
-      height: 24px;
-      fill: #fff;
-    }
-
-    .header-title {
-      font-size: 28px;
-      font-weight: 700;
-      margin-top: 10px;
-    }
-
-    /* 圓形頭像區域 */
-    .avatar-section {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      top: 120px;
-      z-index: 10;
-    }
-
-    .avatar-circle {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      background: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-      border: 6px solid white;
-      position: relative;
-    }
-
-    .avatar-inner {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .avatar-inner svg {
-      width: 100%;
-      height: 100%;
-    }
-
-    /* 白色表單區 - 圓角頂部 */
-    .form-section {
-      position: relative;
-      z-index: 2;
-      padding: 90px 22px 40px;
-      background: #fff;
-      border-radius: 32px 32px 0 0;
-      margin-top: -20px;
-    }
-
-    .form-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: #1a1a1a;
-      text-align: center;
-      margin: 0 0 8px;
-    }
-
-    .role-display {
-      text-align: center;
-      font-size: 16px;
-      font-weight: 600;
-      color: #eb515c;
-      margin-bottom: 24px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 15px;
-      color: #1a1a1a;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 15px 20px;
-      border: 1px solid #e5e7eb;
-      border-radius: 50px;
-      font-size: 16px;
-      background: #f9fafb;
-      transition: 0.2s;
-    }
-
-    .form-group input:focus {
-      outline: none;
-      border-color: #eb515c;
-      background: #fff;
-      box-shadow: 0 0 0 3px rgba(235, 81, 92, 0.12);
-    }
-
-    .submit-button {
-      width: 100%;
-      padding: 18px;
-      margin-top: 10px;
-      background: #eb515c;
-      color: #fff;
-      border: none;
-      border-radius: 50px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .submit-button:hover {
-      background: #d63f4a;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    .helper-text {
-      text-align: center;
-      margin-top: 18px;
-      color: #6b7280;
-      font-size: 14px;
-    }
-
-    .helper-text a {
-      color: #eb515c;
-      font-weight: 600;
-      text-decoration: none;
-    }
-
-    .helper-text a:hover {
-      text-decoration: underline;
-    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;background:#f5f5f5;min-height:100vh}
+    .register-container{max-width:480px;width:100%;margin:0 auto;min-height:100vh;background:#fff;position:relative}
+    .header-section{background:linear-gradient(135deg,#eb515c 0%,#d63f4a 100%);color:#fff;padding:20px 30px 100px;position:relative;text-align:center;z-index:1}
+    .back-button{position:absolute;top:20px;left:20px;width:40px;height:40px;border:none;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none}
+    .back-button svg{width:24px;height:24px;fill:#fff}
+    .header-title{font-size:28px;font-weight:700;margin-top:10px}
+    .avatar-section{position:absolute;left:50%;transform:translateX(-50%);top:120px;z-index:10}
+    .avatar-circle{width:120px;height:120px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.15);border:6px solid #fff}
+    .avatar-inner{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .form-section{position:relative;z-index:2;padding:90px 22px 40px;background:#fff;border-radius:32px 32px 0 0;margin-top:-20px}
+    .form-title{font-size:22px;font-weight:700;color:#1a1a1a;text-align:center;margin:0 0 8px}
+    .role-display{text-align:center;font-size:16px;font-weight:600;color:#eb515c;margin-bottom:24px}
+    .form-group{margin-bottom:20px}
+    .form-group label{display:block;font-size:15px;color:#1a1a1a;font-weight:700;margin-bottom:8px}
+    .form-group input{width:100%;padding:15px 20px;border:1px solid #e5e7eb;border-radius:50px;font-size:16px;background:#f9fafb}
+    .submit-button{width:100%;padding:18px;margin-top:10px;background:#eb515c;color:#fff;border:none;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer}
+    .helper-text{text-align:center;margin-top:18px;color:#6b7280;font-size:14px}
+    .helper-text a{color:#eb515c;font-weight:600;text-decoration:none}
   </style>
-</head>
-<body>
- <body class="mobile-shell">
+  </head>
+  <body class="mobile-shell">
   <div class="device-frame">
     <div class="register-container">
-      <!-- 紅色標頭 -->
       <div class="header-section">
         <a href="register-role.html" class="back-button" aria-label="返回">
-          <svg viewBox="0 0 24 24">
-            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         </a>
         <h1 class="header-title">建立帳號</h1>
       </div>
-
-      <!-- 圓形頭像 -->
       <div class="avatar-section">
-        <div class="avatar-circle">
-          <div class="avatar-inner" id="avatarInner">
-            <!-- SVG 會由 JavaScript 動態插入 -->
-          </div>
-        </div>
+        <div class="avatar-circle"><div class="avatar-inner" id="avatarInner"></div></div>
       </div>
-
-      <!-- 表單內容 -->
       <div class="form-section">
+        <h2 class="form-title">註冊</h2>
         <p id="userRole" class="role-display"></p>
-
         <form id="registerForm">
+          <div id="register-error" role="alert" style="color:#b00020;display:none;margin-bottom:12px;"></div>
           <div class="form-group">
             <label for="nickname">關懷對象暱稱</label>
             <input id="nickname" name="nickname" type="text" placeholder="請輸入暱稱" required>
           </div>
-
           <div class="form-group">
             <label for="email">電子郵件</label>
             <input id="email" name="email" type="email" placeholder="name@example.com" required>
           </div>
-
           <div class="form-group">
             <label for="password">設定密碼</label>
             <input id="password" name="password" type="password" placeholder="請輸入密碼" required>
           </div>
-
           <div class="form-group">
             <label for="confirmPassword">確認密碼</label>
             <input id="confirmPassword" name="confirmPassword" type="password" placeholder="再次輸入密碼" required>
           </div>
-
           <button type="submit" class="submit-button">建立帳號</button>
           <p class="helper-text">已有帳號？<a href="login.html">登入</a></p>
         </form>
       </div>
     </div>
+  </div>
+  <script>
+    (function initRegister(){
+      // 顯示所選身分（維持原視覺）
+      const roleData={grandpa:{name:'阿爺'},grandma:{name:'奶奶'},family:{name:'家人'},'social-worker':{name:'社工'}}
+      const params=new URLSearchParams(location.search);const role=params.get('role');
+      const userRole=document.getElementById('userRole');
+      if(role && roleData[role]){userRole.textContent=`註冊身分：${roleData[role].name}`;}else{userRole.textContent='請選擇註冊身分'}
 
-    <script>
-      // 角色對應資料
-      const roleData = {
-        grandpa: {
-          name: "爺爺",
-          bgColor: "#FFB88C",
-          svg: `
-            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-              <rect width="200" height="200" fill="#FFB88C"/>
-              <circle cx="100" cy="70" r="35" fill="white" opacity="0.9"/>
-              <rect x="70" y="100" width="60" height="70" rx="10" fill="skyblue" opacity="0.9"/>
-              <circle cx="85" cy="65" r="3" fill="#333"/><circle cx="115" cy="65" r="3" fill="#333"/>
-              <path d="M90,80 Q100,85 110,80" stroke="#333" stroke-width="2" fill="none"/>
-              <rect x="75" y="35" width="50" height="18" rx="7" fill="#8B4513" opacity="0.8"/>
-            </svg>
-          `
-        },
-        grandma: {
-          name: "奶奶",
-          bgColor: "#FFA07A",
-          svg: `
-            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-              <rect width="200" height="200" fill="#FFA07A"/>
-              <circle cx="100" cy="70" r="35" fill="white" opacity="0.9"/>
-              <rect x="70" y="100" width="60" height="70" rx="10" fill="#ffd1dc" opacity="0.9"/>
-              <circle cx="85" cy="65" r="3" fill="#333"/><circle cx="115" cy="65" r="3" fill="#333"/>
-              <path d="M90,80 Q100,85 110,80" stroke="#333" stroke-width="2" fill="none"/>
-              <circle cx="70" cy="55" r="12" fill="#8B4513" opacity="0.8"/>
-              <circle cx="130" cy="55" r="12" fill="#8B4513" opacity="0.8"/>
-            </svg>
-          `
-        },
-        family: {
-          name: "家人",
-          bgColor: "#FF8E53",
-          svg: `
-            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-              <rect width="200" height="200" fill="#FF8E53"/>
-              <g transform="translate(-10, 0)">
-                <rect x="60" y="85" width="35" height="70" rx="8" fill="skyblue" opacity="0.9"/>
-                <circle cx="80" cy="60" r="25" fill="white" opacity="0.9"/>
-                <path d="M70,100 L75,140 L85,140 L90,100" fill="#efefcf" opacity="0.7"/>
-              </g>
-              <g transform="translate(15, 0)">
-                <rect x="105" y="85" width="35" height="70" rx="8" fill="pink" opacity="0.9"/>
-                <circle cx="120" cy="60" r="25" fill="white" opacity="0.9"/>
-                <path d="M110,100 L115,140 L125,140 L130,100" fill="white" opacity="0.7"/>
-              </g>
-              
-            </svg>
-          `
-        },
-        "social-worker": {
-          name: "社工",
-          bgColor: "#F4A460",
-          svg: `
-            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-              <rect width="200" height="200" fill="#F4A460"/>
-              <circle cx="100" cy="70" r="35" fill="white" opacity="0.9"/>
-              <rect x="70" y="100" width="60" height="70" rx="10" fill="white" opacity="0.9"/>
-              <circle cx="85" cy="65" r="3" fill="#333"/><circle cx="115" cy="65" r="3" fill="#333"/>
-              <path d="M90,80 Q100,85 110,80" stroke="#333" stroke-width="2" fill="none"/>
-              <path d="M80,50 L100,40 L120,50" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>
-              <rect x="90" y="110" width="20" height="25" fill="#FF6B6B" opacity="0.6"/>
-              <path d="M85,45 L100,38 L115,45" stroke="#4A90E2" stroke-width="7" fill="none" stroke-linecap="round"/>
-            </svg>
-          `
+      const API_BASE=(localStorage.getItem('AI_COMPANION_API_BASE')||'http://localhost:3001').replace(/\/$/,'')
+      const form=document.getElementById('registerForm')
+      const errorEl=document.getElementById('register-error')
+
+      form.addEventListener('submit',async (e)=>{
+        e.preventDefault()
+        if (errorEl) errorEl.style.display='none'
+        const email=(document.getElementById('email')?.value||'').trim()
+        const password=document.getElementById('password')?.value||''
+        const confirm=document.getElementById('confirmPassword')?.value||''
+        const nickname=(document.getElementById('nickname')?.value||'').trim()
+        if(!email||!password){
+          errorEl.textContent='請輸入電子郵件與密碼'; errorEl.style.display='block'; return
         }
-      };
-
-      // 獲取 URL 參數
-      const params = new URLSearchParams(window.location.search);
-      const role = params.get("role");
-
-      // 顯示對應的身分資訊
-      if (role && roleData[role]) {
-        const data = roleData[role];
-        
-        // 設定文字
-        document.getElementById("userRole").textContent = `註冊身分：${data.name}`;
-        
-        // 設定頭像
-        const avatarInner = document.getElementById("avatarInner");
-        avatarInner.innerHTML = data.svg;
-        
-      } else {
-        // 如果沒有角色參數，使用預設
-        document.getElementById("userRole").textContent = "請選擇註冊身分";
-      }
-
-      // 表單提交
-      document.getElementById("registerForm").addEventListener("submit", (e) => {
-        e.preventDefault();
-        
-        const password = document.getElementById("password").value;
-        const confirmPassword = document.getElementById("confirmPassword").value;
-        
-        if (password !== confirmPassword) {
-          alert("密碼不一致，請重新輸入");
-          return;
+        if(password!==confirm){
+          errorEl.textContent='密碼不一致，請重新輸入'; errorEl.style.display='block'; return
         }
-        
-        alert("註冊成功！歡迎加入智護生活");
-        window.location.href = "login.html";
-      });
-    </script>
-   </div>
- </body>
-</body>
-</html>
+        try{
+          const res=await fetch(`${API_BASE}/api/auth/register`,{
+            method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+            body: JSON.stringify({ email, password, username: nickname||email.split('@')[0], full_name: nickname||null })
+          })
+          if(res.ok){
+            // 註冊成功 → 前往登入
+            location.href='login.html'
+          }else if(res.status===409){
+            errorEl.textContent='此帳號已被註冊'; errorEl.style.display='block'
+          }else{
+            const err=await res.json().catch(()=>({}))
+            errorEl.textContent=err?.error||'註冊失敗，請稍後再試'; errorEl.style.display='block'
+          }
+        }catch(_){
+          errorEl.textContent='註冊失敗，請稍後再試'; errorEl.style.display='block'
+        }
+      })
+    })()
+  </script>
+  </body>
+  </html>
