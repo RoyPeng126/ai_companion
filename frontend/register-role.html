@@ -88,5 +88,22 @@
       </div>
     </div>
   </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const storageKey = 'ai-companion-register-role';
+      document.querySelectorAll('.role-card[href]').forEach(card => {
+        card.addEventListener('click', () => {
+          try {
+            const href = card.getAttribute('href');
+            const url = new URL(href, window.location.origin);
+            const role = url.searchParams.get('role');
+            if (role) sessionStorage.setItem(storageKey, role);
+          } catch (_) {
+            // ignore storage errors (e.g. private mode)
+          }
+        });
+      });
+    });
+  </script>
 </body>
 </html>
