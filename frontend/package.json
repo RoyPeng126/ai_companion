@@ -1,0 +1,8 @@
+{
+  "name": "ai-companion-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm dlx --package serve serve -l 3000 ."
+  }
+}

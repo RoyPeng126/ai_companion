@@ -11,9 +11,13 @@ import rankingRouter from './routes/ranking.js'
 import geofenceRouter from './routes/geofence.js'
 
 const app = express()
+const defaultOrigins = [
+  'http://localhost:3000'
+]
+
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
-  : ['http://localhost:3000']
+  : defaultOrigins
 
 app.use(cors({
   origin: allowedOrigins.length ? allowedOrigins : '*',
