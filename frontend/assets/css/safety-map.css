@@ -1,0 +1,85 @@
+#safety-map,
+#home-map {
+  width: 100%;
+  min-height: 320px;
+  height: 65vh;
+  border-radius: 16px;
+  background: #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.12);
+}
+
+@media (min-width: 768px) {
+  #safety-map,
+  #home-map {
+    height: 70vh;
+  }
+}
+
+.safety-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.08);
+}
+
+.safety-status__summary {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-chip--safe {
+  color: #1f7a4d;
+  background: rgba(31, 122, 77, 0.12);
+}
+
+.status-chip--alert {
+  color: #c02626;
+  background: rgba(192, 38, 38, 0.12);
+}
+
+.map-feedback {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.map-feedback--error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.map-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.map-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.home-marker__icon {
+  font-size: 28px;
+  transform: translate(-50%, -50%);
+  display: inline-block;
+}
