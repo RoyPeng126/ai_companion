@@ -1,74 +1,74 @@
 # 智護生活：AI 伴你
 
-這是一款為高齡者打造的概念網站，示範「AI 奶奶」如何透過語音備忘錄、AI 陪聊、健康排行榜與 GPS 安全守護，協助長者在家安心、外出放心。前端靜態檔案已集中於 `frontend/` 目錄，與 `backend/` 後端分離。
+智護生活是一套為長者、家屬與照護者打造的 AI 情感陪伴原型，結合語音備忘錄、情境化陪聊、健康排行榜與 GPS 安全圍欄，示範高齡友善的智慧照護體驗。前端與後端採分離式開發，方便延展成實際服務。
 
-## 可用頁面
+## 專案目錄
+- `frontend/`：行動優先的靜態介面，含登入註冊、角色導覽、陪伴設定、排行榜、社群與安全地圖等頁面。
+- `backend/`：Node.js + Express 服務，整合 Gemini 聊天、Google Speech-to-Text、語音合成、PostgreSQL 使用者資料與地理圍欄通知。
 
-- `frontend/index.html`：首頁，展示服務願景、功能亮點與陪伴情境。
-- `frontend/login.html` / `frontend/registration.html`：長者與家屬可登入或註冊帳號，啟動個人化陪伴。
-- `frontend/selection.html`：選擇 AI 夥伴的年齡感與語氣風格。
-- `frontend/setting.html`：一步一步完成提醒、活動與安全圍欄設定。
-- `frontend/ranking.html`：以排行榜形式檢視步數與服藥準時度，鼓勵家人朋友互相加油。
-- `frontend/forum.html`：社群公園，分享活動與暖心話題。
-- `frontend/guide.html`：離線可用的安全指南，提供可朗讀的求助資訊與自救步驟。
-
-## 使用方式
-
-1. 下載或 clone 專案。
-2. 進入 `frontend/` 目錄，使用瀏覽器開啟任一 HTML 檔案即可瀏覽對應頁面。
-3. 推薦以行動裝置或平板模擬檢視，體驗高齡友善的大按鈕與高對比介面。
-
-## 互動功能亮點
-
-- 首頁的聊天卡片提供「國語 / 台語」語系切換，會同步更新語音合成設定，確保 AI 回覆使用對應語系的聲線與 `languageCode`。
-- 每個語系皆提供「雅婷、意晴、家豪」三種預設聲線：國語對應 `zh_en_female_1`、`zh_en_female_2`、`zh_en_male_1`，台語對應 `tai_female_1`、`tai_female_2`、`tai_male_1`（支援 16K 取樣）。
-- 使用者選擇會保存於瀏覽器的 `localStorage`，重新整理或改機器仍能延續個人喜好。
-
-## 設計重點
-
-- 延續紅色系漸層風格，搭配圓角卡片與大字體，提升可讀性。
-- 所有頁面皆提供清楚的導覽連結，方便長者與家屬快速跳轉。
-- 離線指南頁面內建瀏覽器語音朗讀功能，確保在無網路環境也能獲得協助。
-
-## 後續展望
-
-- 串接語音辨識、穿戴裝置與定位 API，從靜態體驗延伸至可實際操作的原型。
-- 製作更多情境導引（例如醫院就診、搭乘交通工具），讓 AI 陪伴更貼近日常。
-
-
+## 核心體驗
+- **語音助理與備忘錄**：首頁聊天卡支援文字 / 語音輸入，串接 Gemini 回覆並自動儲存備忘錄，聊天語系與聲線會依 persona 與語言設定同步更新。
+- **個人化陪伴設定**：welcome → register-role → registration → selection → setting 的串接流程，依長者、家屬或社工身分提供不同提示，設定結果保存在 `localStorage`。
+- **健康照護儀表**：`ranking.html` 與 `frontend/assets/js/ranking.js` 顯示步數、服藥、睡眠排行，可即時呼叫 `/api/ranking`、`/api/ranking/sync` 更新資料。
+- **安全守護**：Leaflet 地圖 (`safety-map.js`) 支援台灣行政區搜尋、地理編碼、圓形安全圍欄與距離計算，可搭配後端 `/api/geofence/check` 發送超界通知。
+- **家人社群與離線支援**：`forum.html`、`features.html` 提供情感互動，`guide.html` 內建瀏覽器朗讀，確保離線時仍能取得求助步驟。
 
 ## 後端服務
+- Express 伺服器集中於 `backend/src/server.js`，啟用 CORS、日誌與錯誤處理。
+- `/api/auth` 路由提供註冊、登入、`/me` 查詢、修改密碼；採 JWT（簽發後以 HttpOnly Cookie 儲存）與 PostgreSQL `users` 資料表。
+- `/api/chat` 將語音送往 Google STT，再帶入 persona prompt 呼叫 Gemini，最後使用語音合成服務回傳音檔。
+- `/api/ranking` 使用 `backend/data/healthMetrics.json` 作為暫存倉，可依需求換成實際穿戴裝置或資料庫。
+- `/api/geofence` 結合 `geolib` 判斷是否離開安全範圍，並透過 `notificationService` 暫存不同家族的警示。
 
-專案新增 `backend/` 目錄，提供 Node.js/Express 的示範後端，整合語音辨識、Gemini 聊天、語音合成、健康資料排行榜以及 GPS 安全圍欄。
+### API 端點速覽
+- `POST /api/auth/register`：建立使用者並回傳基本資料。
+- `POST /api/auth/login`：驗證帳密、簽發 cookie 式 JWT。
+- `GET /api/auth/me`：檢查登入狀態，需附帶 cookie。
+- `POST /api/chat`：輸入語音或文字取得 Gemini 回應與 TTS 音訊。
+- `GET /api/ranking`：依 `metric` 參數（`steps`、`medicationAdherence`、`sleepHours`）排序家族資料。
+- `POST /api/geofence/check`：將目前定位與安全圍欄送入後端，若超界會回傳通知記錄。
 
-### 啟動方式
+## 建置與啟動
+### 需求
+- Node.js 18+（內建 `fetch` 與頂層 await）、pnpm 8+。
+- PostgreSQL（本地或雲端，`.env` 需指定 `DATABASE_URL`）。
+- Google Cloud Speech-to-Text 與 Gemini API 金鑰、語音合成服務金鑰。
 
-1. **後端（Node.js/Express）**
-   ```bash
-   cd backend
-   pnpm install
-   cp .env.example .env  # 填好 GEMINI_API_KEY、Google 語音憑證、TTS_API_KEY 等變數
-   pnpm run dev          # 或 pnpm run start
-   ```
-   - Windows PowerShell 可改用 `Copy-Item .env.example .env`，傳統命令列使用 `copy .env.example .env`。
-   - 語音辨識使用 Google Cloud Speech-to-Text，請準備服務帳號憑證（`GOOGLE_APPLICATION_CREDENTIALS` 或 `GOOGLE_APPLICATION_CREDENTIALS_JSON`）。
-   - 語音合成透過 [Yating 雲端語音合成 API](https://tts.api.yating.tw)，請於 `.env` 設定 `TTS_API_KEY`，並視需求調整 `TTS_VOICE_MODEL`、`TTS_AUDIO_ENCODING`、`TTS_AUDIO_SAMPLE_RATE`；目前內建支援國語 `zh_en_*` 與台語 `tai_*` 聲線（台語模型建議使用 16K 取樣）。
-   - 預設僅允許 `http://localhost:3000` 前端來源，若需要額外網域請在 `.env` 的 `CORS_ORIGINS` 以逗號加入。
+### 安裝步驟
+1. `cd backend && pnpm install`
+2. `cd ../frontend && pnpm install`（僅供管理命令；靜態資源不需編譯）
 
-2. **前端（靜態頁面）**
-   ```bash
-   cd frontend
-   pnpm dlx serve -l 3000   # 或任何靜態伺服器，例如 python -m http.server 3000
-   # 於 frontend 目錄執行，瀏覽器開 http://localhost:3000
-   ```
-   - 前端會向 `http://localhost:3001/api/...` 發送請求，必要時請在後端設定 CORS。
+### 啟動服務
+```bash
+# 後端（預設 http://localhost:3001）
+cd backend
+pnpm run dev
 
-服務預設於 `http://localhost:3001` 運行，提供下列 API：
+# 另開終端啟動前端（預設 http://localhost:3000）
+cd frontend
+pnpm run dev 
+# 或任何靜態伺服器，例如 python -m http.server 3000
+```
+前端預設向 `http://localhost:3001/api` 發送請求，如需不同網域請調整 `backend/.env` 的 `CORS_ORIGINS`。
 
-- `POST /api/chat`：接收語音（Base64）或文字訊息，透過 Google Speech-to-Text（STT）、Gemini（聊天）與 Yating 語音合成（TTS），回傳聊天回覆與語音。
-- `GET /api/ranking`：讀取並排序家族健康資料，支援 `metric` 查詢參數（如 `steps`、`medicationAdherence`）。
-- `POST /api/ranking/sync`：更新或新增單一成員的計步、服藥與睡眠資料。
-- `POST /api/geofence/check`：檢查使用者當前定位是否超出安全圍欄，並在超界時產生警示通知。
-- `GET /api/geofence/notifications/:familyId`：查詢家族收到的警示通知。
+## 環境變數（backend/.env）
+- 核心服務：`PORT`（預設 3001）、`CORS_ORIGINS`。
+- 身份驗證：`JWT_SECRET`、`TOKEN_TTL_SECONDS`（可選，預設 7 天）。
+- Gemini：`GEMINI_API_KEY`、`GEMINI_MODEL`、`GEMINI_MAX_OUTPUT_TOKENS`。
+- 語音辨識：`GOOGLE_APPLICATION_CREDENTIALS` 或 `GOOGLE_APPLICATION_CREDENTIALS_JSON`。
+- 語音合成：`TTS_API_KEY`、`TTS_VOICE_MODEL`、`TTS_AUDIO_ENCODING`、`TTS_AUDIO_SAMPLE_RATE`。
+- 資料庫：`DATABASE_URL`（需指定 TLS 參數或使用雲端服務提供的連線字串）。
 
-健康資料預設儲存在 `backend/data/healthMetrics.json`，可依實際情境改接資料庫或穿戴裝置 API。
+## 開發小提醒
+- `pnpm run lint`（於 `backend/`）可檢查 Express 專案程式碼品質。
+- `frontend/assets/js/*.js` 為模組化腳本，若需調整地圖或聊天邏輯請從對應檔案著手。
+- Leaflet 與 Nominatim 採用開源瓦片與 API，若要部署請遵守相關使用政策。
+- `backend/data/healthMetrics.json` 為示範資料，部署時可改成真正的資料來源或排程更新。
+
+## 最新更新
+- 新增 welcome → register-role → registration 的身分導向式導覽，引導不同使用者完成設定。
+- 後端加入 PostgreSQL 使用者資料表、cookie JWT 登入、個人檔案編輯與密碼修改流程。
+- 聊天服務改用 Gemini 2.5 Flash，支援 persona 設定、語系與語速同步到語音合成。
+- 安全守護流程整合 Leaflet 地圖、台灣行政區搜尋與 `/api/geofence/check` 提醒。
+- 健康排行榜與 `/api/ranking/sync` 支援步數、服藥、睡眠三指標的排行與同步。
+- README 更新：補齊環境設定、啟動教學與前後端功能說明，方便快速上手。
