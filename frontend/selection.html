@@ -3,8 +3,207 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>選擇陪伴年齡｜智護生活</title>
+  <title>陪伴設定｜智護生活</title>
   <link rel="stylesheet" href="assets/css/style.css">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  >
+  <link rel="stylesheet" href="assets/css/safety-map.css">
+
+  <style>
+    main { padding: 2rem 1rem; }
+
+    .hero {
+      background: linear-gradient(135deg, #f093ad 0%, #ef5777 100%);
+      color: #fff;
+      border-radius: 20px;
+      padding: 2rem;
+      text-align: center;
+      max-width: 900px;
+      margin: 0 auto 2rem;
+    }
+
+    .status-pill {
+      display: inline-block;
+      background: rgba(255,255,255,0.3);
+      border: 2px solid rgba(255,255,255,0.4);
+      border-radius: 20px;
+      padding: .5rem 1.2rem;
+      margin-bottom: .75rem;
+      font-weight: 500;
+    }
+
+    .hero h2 { font-size: 2rem; margin-bottom: .5rem; }
+    .current-setting { opacity: 0.95; }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 1.5rem;
+      max-width: 950px;
+      margin: 2rem auto;
+    }
+
+    .companion-card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 1.5rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform .25s, box-shadow .25s;
+    }
+
+    .companion-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+    }
+
+    .card-icon svg {
+      width: 120px;
+      height: 120px;
+      margin-bottom: 1rem;
+    }
+
+    .companion-card h3 {
+      font-size: 1.6rem;
+      color: #2d3748;
+      margin-bottom: .4rem;
+    }
+
+    .companion-desc {
+      font-size: 1rem;
+      color: #555;
+      margin-bottom: 1rem;
+    }
+
+    .btn {
+      padding: .8rem 1.2rem;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+
+    .btn-add {
+      background: white;
+      border: 2px solid #ef5777;
+      color: #ef5777;
+    }
+    .btn-add:hover { background: #fff5f7; }
+    .btn-selected { background: #ef5777; color: white; }
+
+    /* 自訂陪伴風格 */
+    .settings-card {
+      background: white;
+      border-radius: 20px;
+      border: 3px solid #ef5777;
+      padding: 2rem;
+      max-width: 900px;
+      margin: 0 auto 2rem;
+    }
+
+    .settings-card h3 {
+      font-size: 1.4rem;
+      margin-bottom: 1.5rem;
+      color: #2d3748;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: .5rem;
+      color: #4a5568;
+      font-weight: 500;
+      font-size: 1.05rem;
+    }
+
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: .85rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      transition: border-color 0.3s;
+      font-family: inherit;
+    }
+
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #ef5777;
+    }
+
+    .continue-btn {
+      width: 100%;
+      padding: 1.2rem;
+      background: linear-gradient(135deg, #ef5777 0%, #f093ad 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .continue-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(239,87,119,0.3);
+    }
+
+    footer { text-align:center; color:#777; padding:1rem; }
+
+    /* 手機版改成左右布局 */
+    @media (max-width: 768px) {
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .companion-card {
+        flex-direction: row;
+        align-items: center;
+        text-align: left;
+        padding: 1rem;
+      }
+
+      .card-icon svg {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 0;
+        margin-right: 1rem;
+      }
+
+      .companion-card h3 {
+        font-size: 1.4rem;
+      }
+
+      .companion-desc {
+        margin-bottom: .5rem;
+        font-size: 0.95rem;
+      }
+
+      .btn {
+        display: block;
+        margin-top: .5rem;
+        width: 100%;
+      }
+
+      .companion-info {
+        flex: 1;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="app-shell">
@@ -28,52 +227,102 @@
     </header>
 
     <main>
-      <section class="hero" aria-label="陪伴角色介紹">
-        <div>
-          <p class="status-pill">挑選專屬 AI 夥伴</p>
-          <h2>依照心情與需求選擇聊天夥伴的年齡感</h2>
-          <p>不同年齡的 AI 夥伴具備獨特的語調與對話風格，讓陪伴更貼近真實日常。</p>
-          <p id="persona-status" class="helper-text" role="status" aria-live="polite"></p>
-        </div>
+      <section class="hero">
+        <p class="status-pill">挑選專屬 AI 夥伴</p>
+        <h2>依心情選擇聊天夥伴</h2>
+        <p id="personaStatus" class="current-setting">目前尚未選擇陪聊夥伴</p>
       </section>
 
-      <section class="grid three" aria-label="陪伴角色卡片">
-        <article class="card persona-card" data-persona="child">
-          <h3>活力童年版</h3>
-          <p>充滿好奇與活力，適合想要被逗笑、分享生活趣事的時刻。</p>
-          <p class="helper-text">常用語：一起玩、說故事、問問題。</p>
-          <button class="btn primary persona-pick" type="button" data-persona-target="child">選擇童年版</button>
+      <section class="cards-grid">
+        <article class="companion-card" data-persona="child">
+          <div class="card-icon">
+            <svg viewBox="0 0 200 200">
+              <defs>
+                <radialGradient id="orangeGrad" cx="40%" cy="40%">
+                  <stop offset="0%" style="stop-color:#ffb894;stop-opacity:1"/>
+                  <stop offset="100%" style="stop-color:#ff9968;stop-opacity:1"/>
+                </radialGradient>
+              </defs>
+              <circle cx="100" cy="100" r="90" fill="url(#orangeGrad)"/>
+              <circle cx="75" cy="85" r="8" fill="#000"/>
+              <circle cx="125" cy="85" r="8" fill="#000"/>
+              <path d="M 70 120 Q 100 140 130 120" stroke="#000" stroke-width="4" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="companion-info">
+            <h3>活力童年版</h3>
+            <p class="companion-desc">活潑有趣，適合分享心情。</p>
+            <button class="btn btn-add persona-pick">選擇</button>
+          </div>
         </article>
-        <article class="card persona-card" data-persona="adult">
-          <h3>溫柔青壯版</h3>
-          <p>理解生活壓力與健康管理，陪你聊家務、料理與生活規劃。</p>
-          <p class="helper-text">常用語：一起想辦法、我幫你記錄。</p>
-          <button class="btn primary persona-pick" type="button" data-persona-target="adult">選擇青壯版</button>
+
+        <article class="companion-card" data-persona="adult">
+          <div class="card-icon">
+            <svg viewBox="0 0 200 200">
+              <defs>
+                <radialGradient id="yellowGrad" cx="40%" cy="40%">
+                  <stop offset="0%" style="stop-color:#ffe89d;stop-opacity:1"/>
+                  <stop offset="100%" style="stop-color:#ffd966;stop-opacity:1"/>
+                </radialGradient>
+              </defs>
+              <circle cx="100" cy="100" r="90" fill="url(#yellowGrad)"/>
+              <circle cx="75" cy="85" r="8" fill="#000"/>
+              <circle cx="125" cy="85" r="8" fill="#000"/>
+              <path d="M 70 120 Q 100 140 130 120" stroke="#000" stroke-width="4" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="companion-info">
+            <h3>溫柔青壯版</h3>
+            <p class="companion-desc">理解壓力，陪你規劃日常。</p>
+            <button class="btn btn-add persona-pick">選擇</button>
+          </div>
         </article>
-        <article class="card persona-card" data-persona="senior">
-          <h3>智慧長者版</h3>
-          <p>像熟悉的老朋友般傾聽與建議，最懂如何照顧年長者的生活步調。</p>
-          <p class="helper-text">常用語：慢慢來、我陪著你。</p>
-          <button class="btn primary persona-pick" type="button" data-persona-target="senior">選擇長者版</button>
+
+        <article class="companion-card" data-persona="senior">
+          <div class="card-icon">
+            <svg viewBox="0 0 200 200">
+              <defs>
+                <radialGradient id="loveGrad" cx="40%" cy="40%">
+                  <stop offset="0%" style="stop-color:#ffe89d;stop-opacity:1"/>
+                  <stop offset="60%" style="stop-color:#ffd966;stop-opacity:1"/>
+                  <stop offset="100%" style="stop-color:#ffb894;stop-opacity:0.6"/>
+                </radialGradient>
+              </defs>
+              <circle cx="100" cy="100" r="90" fill="url(#loveGrad)"/>
+              <g transform="translate(125, 65)">
+                <path d="M 0,-5 C -3,-12 -12,-12 -12,-5 C -12,0 0,8 0,8 C 0,8 12,0 12,-5 C 12,-12 3,-12 0,-5 Z" fill="#ff6b9d"/>
+              </g>
+              <ellipse cx="60" cy="110" rx="18" ry="12" fill="#ffb894" opacity="0.6"/>
+              <ellipse cx="140" cy="110" rx="18" ry="12" fill="#ffb894" opacity="0.6"/>
+              <path d="M 65 85 Q 75 90 85 85" stroke="#000" stroke-width="4" fill="none" stroke-linecap="round"/>
+              <path d="M 115 85 Q 125 90 135 85" stroke="#000" stroke-width="4" fill="none" stroke-linecap="round"/>
+              <path d="M 75 125 Q 100 140 125 125" stroke="#000" stroke-width="3" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="companion-info">
+            <h3>智慧長者版</h3>
+            <p class="companion-desc">慢慢來，我陪著你。</p>
+            <button class="btn btn-add persona-pick">選擇</button>
+          </div>
         </article>
       </section>
 
-      <section class="card" aria-label="陪伴細節設定">
-        <h2>自訂陪伴風格</h2>
-        <form>
-          <div>
+      <section class="settings-card">
+        <h3>自訂陪伴風格</h3>
+        <form id="prefForm">
+          <div class="form-group">
             <label for="tone">語氣偏好</label>
             <select id="tone" name="tone">
-              <option>輕鬆幽默</option>
-              <option>穩重陪伴</option>
-              <option>專業關懷</option>
+              <option value="輕鬆幽默">輕鬆幽默</option>
+              <option value="穩重陪伴">穩重陪伴</option>
+              <option value="專業關懷">專業關懷</option>
             </select>
           </div>
-          <div>
+          <div class="form-group">
             <label for="topics">喜愛話題</label>
             <textarea id="topics" name="topics" placeholder="請輸入想聊的話題，例如：料理、戲劇、健康..."></textarea>
           </div>
-          <button class="btn secondary" type="submit">儲存偏好</button>
+          <button type="submit" class="continue-btn">儲存偏好</button>
         </form>
       </section>
     </main>
@@ -82,6 +331,7 @@
       <p>©2025 NCCU=MIS+STAT</p>
     </footer>
   </div>
+
   <script src="assets/js/app.js"></script>
   <script src="assets/js/persona.js"></script>
 </body>
