@@ -5,9 +5,9 @@
   const MAX_CONTEXT_MESSAGES = 10;
   const MAX_MEMOS = 20;
   const AVATARS = {
-    child: "assets/image/S__164036618.jpg",
-    adult: "assets/image/S__164036619.jpg",
-    senior: "assets/image/S__164036620.jpg"
+    child: "assets/image/雅婷.jpg",
+    adult: "assets/image/意晴.jpg",
+    senior: "assets/image/家豪.jpg"
   };
   const PERSONA_LABELS = {
     child: "活力童年版",

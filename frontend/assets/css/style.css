@@ -64,15 +64,11 @@ footer {
   gap: 0.75rem;
 }
 
-.brand-logo {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  color: #fff;
+.logo-img {
+  width: 32px;   /* 可依需求調整 */
+  height: 32px;
+  object-fit: contain;
+  vertical-align: middle;
 }
 
 .brand h1 {
@@ -409,6 +405,78 @@ footer {
 
 .voice-option.voice-option--compact .voice-desc {
   font-size: 0.8rem;
+}
+
+.chat-preferences {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.chat-preferences__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chat-preferences__row label,
+.chat-preferences__label {
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+.chat-preferences__row select {
+  min-width: 180px;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  border: 2px solid rgba(230, 57, 70, 0.15);
+  background: #fff;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.chat-preferences__row select:focus-visible {
+  outline: 3px solid rgba(230, 57, 70, 0.25);
+  outline-offset: 1px;
+}
+
+.chat-preferences__label {
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.language-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.language-chip {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 2px solid rgba(230, 57, 70, 0.2);
+  background: rgba(230, 57, 70, 0.06);
+  color: var(--primary-dark);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.language-chip[aria-pressed="true"],
+.language-chip.is-selected {
+  background: rgba(230, 57, 70, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 8px 16px rgba(230, 57, 70, 0.18);
+}
+
+.language-chip:focus-visible {
+  outline: 3px solid rgba(230, 57, 70, 0.3);
+  outline-offset: 2px;
+}
+
+.language-chip:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary);
 }
 
 .voice-selection {

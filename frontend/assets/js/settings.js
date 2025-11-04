@@ -120,15 +120,12 @@
 
   const setActiveLanguageButton = (container, languageCode) => {
     if (!container) return;
-    Array.from(container.querySelectorAll("[data-language-option]")).forEach((button) => {
+    const buttons = Array.from(container.querySelectorAll("[data-language-option]"));
+    buttons.forEach((button) => {
       const isActive = button.dataset.languageOption === languageCode;
       button.classList.toggle("is-selected", isActive);
       button.setAttribute("aria-pressed", isActive ? "true" : "false");
-      if (isActive) {
-        button.tabIndex = 0;
-      } else {
-        button.removeAttribute("tabindex");
-      }
+      button.tabIndex = isActive ? 0 : -1;
     });
   };
 
@@ -179,15 +176,20 @@
 
   window.addEventListener("DOMContentLoaded", () => {
     if (!window.aiCompanion) return;
-    const languageContainer = document.querySelector("[data-language-options]");
-    const voiceContainers = document.querySelectorAll("[data-voice-options]");
-    if (!voiceContainers.length) return;
+    const languageContainers = Array.from(
+      document.querySelectorAll("[data-language-options]")
+    );
 
     const syncFromSettings = (settings) => {
       const languageCode = getValidLanguage(settings?.speechConfig?.languageCode);
-      const ensuredVoice = ensureVoiceForLanguage(languageCode, settings?.speechConfig?.voiceName);
+      const ensuredVoice = ensureVoiceForLanguage(
+        languageCode,
+        settings?.speechConfig?.voiceName
+      );
       const activeVoice = renderVoiceOptions(languageCode, ensuredVoice);
-      setActiveLanguageButton(languageContainer, languageCode);
+      languageContainers.forEach((container) => {
+        setActiveLanguageButton(container, languageCode);
+      });
 
       if (
         activeVoice !== settings?.speechConfig?.voiceName ||
@@ -205,20 +207,31 @@
     const initialSettings = window.aiCompanion.settings;
     syncFromSettings(initialSettings);
 
-    if (languageContainer) {
-      languageContainer.addEventListener("click", (event) => {
-        const target = event.target.closest("[data-language-option]");
-        if (!target) return;
-        const selectedLanguage = getValidLanguage(target.dataset.languageOption);
-        const currentVoice = window.aiCompanion.settings?.speechConfig?.voiceName;
-        const ensuredVoice = ensureVoiceForLanguage(selectedLanguage, currentVoice);
-        renderVoiceOptions(selectedLanguage, ensuredVoice);
-        setActiveLanguageButton(languageContainer, selectedLanguage);
-        window.aiCompanion.setSettings({
-          speechConfig: {
-            languageCode: selectedLanguage,
-            voiceName: ensuredVoice
-          }
+    if (languageContainers.length) {
+      languageContainers.forEach((container) => {
+        container.addEventListener("click", (event) => {
+          const target = event.target.closest("[data-language-option]");
+          if (!target) return;
+          const selectedLanguage = getValidLanguage(target.dataset.languageOption);
+          const persona = window.aiCompanion.settings?.persona;
+          const preferredVoice = window.aiCompanion.getPersonaDefaultVoice
+            ? window.aiCompanion.getPersonaDefaultVoice(persona, selectedLanguage)
+            : null;
+          const currentVoice = window.aiCompanion.settings?.speechConfig?.voiceName;
+          const ensuredVoice = ensureVoiceForLanguage(
+            selectedLanguage,
+            preferredVoice || currentVoice
+          );
+          renderVoiceOptions(selectedLanguage, ensuredVoice);
+          languageContainers.forEach((group) => {
+            setActiveLanguageButton(group, selectedLanguage);
+          });
+          window.aiCompanion.setSettings({
+            speechConfig: {
+              languageCode: selectedLanguage,
+              voiceName: ensuredVoice
+            }
+          });
         });
       });
     }

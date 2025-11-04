@@ -16,7 +16,9 @@
   <div class="app-shell">
     <header class="top-bar" aria-label="主要導覽">
       <div class="brand">
-        <span class="brand-logo" aria-hidden="true">AI</span>
+        <<span class="brand-logo" aria-hidden="true">
+        <img src="assets/image/logo.jpg" alt="AI Logo" class="logo-img">
+        </span>
         <h1>智護生活：AI 伴你</h1>
       </div>
       <button class="menu-toggle" type="button" aria-controls="site-nav" aria-expanded="false" data-menu-toggle>
@@ -82,6 +84,15 @@
         <p class="helper-text">
           選擇 AI 奶奶回覆時使用的語音，所有語音皆由 Yating 提供。
         </p>
+        <div class="chat-preferences">
+          <div class="chat-preferences__row chat-preferences__row--language">
+            <span class="chat-preferences__label">語音語言</span>
+            <div class="language-toggle" data-language-options role="group" aria-label="語音語言選擇">
+              <button type="button" class="language-chip is-selected" data-language-option="zh-TW" aria-pressed="true">國語</button>
+              <button type="button" class="language-chip" data-language-option="nan-TW" aria-pressed="false">台語</button>
+            </div>
+          </div>
+        </div>
         <div class="voice-presets" data-voice-options role="radiogroup" aria-labelledby="voice-settings-title"></div>
         <p class="helper-text">隨時可以在此頁面調整喜歡的聲音風格。</p>
       </section>

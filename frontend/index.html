@@ -28,7 +28,9 @@
   <div class="app-shell">
     <header class="top-bar" aria-label="主要導覽">
       <div class="brand">
-        <span class="brand-logo" aria-hidden="true">AI</span>
+        <<span class="brand-logo" aria-hidden="true">
+        <img src="assets/image/logo.jpg" alt="AI Logo" class="logo-img">
+        </span>
         <h1>智護生活：AI 伴你</h1>
       </div>
       <button class="menu-toggle" type="button" aria-controls="site-nav" aria-expanded="false" data-menu-toggle>
@@ -96,9 +98,24 @@
           <h3>家族暖心回饋</h3>
           <div class="chat-window" data-ai-chat>
             <div class="voice-selection">
-              <p class="helper-text">選擇 AI 奶奶回覆時的語音風格：</p>
-              <div class="voice-presets compact" data-voice-options data-voice-variant="compact" role="radiogroup" aria-label="語音風格選項"></div>
-            </div>
+              <div class="chat-preferences">
+                <div class="chat-preferences__row">
+                  <label for="persona-selector">陪聊角色</label>
+                  <select id="persona-selector" name="persona-selector">
+                    <option value="child">活力童年版</option>
+                    <option value="adult">溫柔青壯版</option>
+                    <option value="senior">智慧長者版</option>
+                  </select>
+                </div>
+                <p id="chat-persona" class="helper-text">目前陪聊夥伴：智慧長者版</p>
+                <div class="chat-preferences__row chat-preferences__row--language">
+                  <span class="chat-preferences__label">語音語言</span>
+                  <div class="language-toggle" data-language-options role="group" aria-label="語音語言選擇">
+                    <button type="button" class="language-chip is-selected" data-language-option="zh-TW" aria-pressed="true">國語</button>
+                    <button type="button" class="language-chip" data-language-option="nan-TW" aria-pressed="false">台語</button>
+                  </div>
+                </div>
+              </div>
             <div class="chat-log" id="chat-log" aria-live="polite"></div>
             <div id="chat-status" class="chat-status helper-text" role="status" aria-live="assertive"></div>
             <div class="voice-memos" aria-label="語音備忘錄">
