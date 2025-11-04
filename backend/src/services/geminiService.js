@@ -204,3 +204,55 @@ export const generateChatResponse = async ({
     text: '抱歉，我一時想不到合適的回應，請換個說法試試。'
   }
 }
+
+// Refine a reminder title: strip filler words and output a concise title without changing time semantics.
+export const refineReminderTitle = async ({ rawText, hints = {} }) => {
+  const genAI = getClient()
+  const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest'
+  const requestOptions = process.env.GEMINI_API_VERSION
+    ? { apiVersion: process.env.GEMINI_API_VERSION }
+    : undefined
+  const model = genAI.getGenerativeModel(
+    { model: modelName },
+    requestOptions
+  )
+
+  const guidance = [
+    '你是一個提醒標題精煉器。',
+    '任務：將使用者的口語句子改寫為「簡潔的提醒標題」。',
+    '嚴格規則：',
+    '1) 不得改變時間語意（例如 上午/下午、時分），不得新增或刪除時間。',
+    '2) 移除前綴與語助詞（例如：我要/請/可以嗎/嗎/呢/啊/吧/耶/唷…）。',
+    '3) 請用自然中文短語，避免問句與標點尾巴。',
+    '4) 僅輸出 JSON：{"title":"..."}，不得多餘文字。'
+  ].join('\n')
+
+  const hintLines = []
+  if (hints?.timeLabel) hintLines.push(`時間提示: ${hints.timeLabel}`)
+  if (hints?.category) hintLines.push(`類別提示: ${hints.category}`)
+
+  const userMsg = [
+    `原文: ${rawText}`,
+    hintLines.join('\n')
+  ].filter(Boolean).join('\n')
+
+  const requestPayload = {
+    systemInstruction: { role: 'system', parts: [{ text: guidance }] },
+    contents: [ { role: 'user', parts: [{ text: userMsg }] } ],
+    generationConfig: { temperature: 0.2, topP: 0.9, responseMimeType: 'application/json' }
+  }
+
+  const result = await model.generateContent(requestPayload)
+  const jsonText = result?.response?.text?.() ?? ''
+  try {
+    const parsed = JSON.parse(jsonText)
+    const title = typeof parsed?.title === 'string' ? parsed.title.trim() : ''
+    return title || ''
+  } catch (_) {
+    // Fall back to plain text; try to extract first line
+    const text = (jsonText || '').trim()
+    if (!text) return ''
+    const line = text.split('\n').find(Boolean) || ''
+    return line.replace(/^\{"title"\s*:\s*"|"\}\s*$/g, '').trim()
+  }
+}

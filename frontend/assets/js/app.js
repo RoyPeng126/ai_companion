@@ -75,6 +75,7 @@
     };
 
     const response = await window.fetch(url, {
+      credentials: options.credentials ?? 'include',
       ...options,
       headers
     });

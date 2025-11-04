@@ -1578,3 +1578,26 @@ body{
   margin:0 !important;
   box-shadow:none !important;
 }
+
+/* Visibility fix: make add-reminder buttons visible in chat input */
+.chat-input .btn.secondary {
+  background: #fff;
+  color: var(--primary-dark);
+  border: 1px solid rgba(230, 57, 70, 0.25);
+}
+
+/* Today list: clearer card and delete contrast */
+#today-list li {
+  background: #fff;
+  border: 1px solid rgba(230, 57, 70, 0.15);
+}
+
+#today-list .btn.secondary[data-del] {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+}
+
+#today-list .btn.secondary[data-del]:hover {
+  filter: brightness(0.95);
+}

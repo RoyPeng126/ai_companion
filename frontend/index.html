@@ -4,7 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>智護生活：AI 伴你</title>
+  <!-- CSS -->
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin>
+  <link rel="stylesheet" href="assets/css/safety-map.css">
   <script>
+    // 首訪導到 welcome
     (function () {
       const storageKey = 'ai-companion-skip-welcome'
       const fromWelcome = document.referrer && document.referrer.includes('welcome.html')
@@ -14,19 +19,10 @@
           window.location.replace('welcome.html')
         }
       } catch (error) {
-        if (!fromWelcome) {
-          window.location.replace('welcome.html')
-        }
+        if (!fromWelcome) window.location.replace('welcome.html')
       }
     })()
   </script>
-  <link rel="stylesheet" href="assets/css/style.css">
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    crossorigin=""
-  >
-  <link rel="stylesheet" href="assets/css/safety-map.css">
 </head>
 <body>
   <div class="app-shell">
@@ -67,39 +63,31 @@
     </header>
 
     <main>
-      <!-- Hero 區（只留一句話） -->
       <section class="hero">
         <div>
           <p class="status-pill">高齡友善．情感陪伴．安全守護</p>
           <h2>讓陪伴與提醒成為生活一部分</h2>
-          <!-- 原本這裡的段落文字已移除 -->
         </div>
       </section>
 
-      <!-- ✅ 已移除：功能三卡片區塊（id="features"） -->
-
-      <!-- 以下區塊維持不變 -->
       <section class="grid two" aria-label="快速操作">
         <article class="card">
           <h3>今日重點提醒</h3>
-          <ul class="list">
-            <li><strong>08:30</strong><span>早餐後服用血壓藥</span></li>
-            <li><strong>10:00</strong><span>與 AI 奶奶聊聊心情</span></li>
-            <li><strong>15:00</strong><span>陪伴散步 20 分鐘</span></li>
-          </ul>
+          <ul class="list" id="today-list"></ul>
           <p class="helper-text">提醒來源可由長者語音新增或家屬遠端同步。</p>
         </article>
+
         <article class="card" id="safety-card">
           <h3>安全概況</h3>
           <div class="safety-status" id="safetyStatus">
             <span class="status-chip status-chip--alert" id="safetyChip">尚未設定</span>
             <p class="safety-status__summary" id="safetySummary">尚未設定住家地址。</p>
-            <p class="info-text" id="safetyDetail">請先前往快速設定頁面儲存住家位置，以啟用安全範圍提醒。</p>
+            <p class="info-text" id="safetyDetail">請前往快速設定頁面儲存住家位置，以啟用安全範圍提醒。</p>
             <a class="btn secondary" id="safetySetupBtn" href="setting.html">前往設定</a>
             <p class="map-feedback map-feedback--error" id="safetyWarning" hidden></p>
           </div>
           <div id="safety-map" aria-label="安全地圖"></div>
-          <p class="helper-text">外出時會自動檢測與住家的距離，超過 2 公里將通知家屬並提醒返家。</p>
+          <p class="helper-text">外出時會偵測與住家的距離，超過 2 公里將通知家屬。</p>
         </article>
       </section>
 
@@ -125,26 +113,21 @@
               <textarea id="chat-message" aria-label="輸入訊息" placeholder="說說今天想聊的事..." rows="2"></textarea>
               <div class="chat-actions">
                 <button class="btn icon-only voice-button" type="button" id="record-toggle" aria-label="開始錄音">
-                  <svg class="icon" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v6a3.5 3.5 0 0 0 3.5 3.5Zm5-3.5a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12h-2Z" />
-                  </svg>
+                  <svg class="icon" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v6a3.5 3.5 0 0 0 3.5 3.5Zm5-3.5a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12h-2Z"/></svg>
                   <span class="sr-only" data-record-label>開始錄音</span>
                 </button>
                 <button class="btn primary send-button" type="button" id="send-text">
-                  <svg class="icon" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="m17.27 10.74-8.02-4.67a1 1 0 0 0-1.49.86v9.14a1 1 0 0 0 1.5.86l8.02-4.47a1 1 0 0 0-.01-1.72Zm-7.51 3.61V9.66L14.78 12l-5.02 2.35Z"/>
-                  </svg>
+                  <svg class="icon" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false"><path fill="currentColor" d="m17.27 10.74-8.02-4.67a1 1 0 0 0-1.49.86v9.14a1 1 0 0 0 1.5.86l8.02-4.47a1 1 0 0 0-.01-1.72Zm-7.51 3.61V9.66L14.78 12l-5.02 2.35Z"/></svg>
                   <span>傳送</span>
                 </button>
               </div>
             </div>
-            <p class="helper-text">按下「開始錄音」說出想提醒的事，系統會自動轉成備忘錄，並由 AI 夥伴語音回覆。</p>
+            <p class="helper-text">按下「開始錄音」說出想提醒的事，系統可轉成備忘錄，並由 AI 夥伴語音回覆。</p>
           </div>
         </article>
         <article class="card">
           <h3>社區互動</h3>
-          <p>每週五晚上 8 點與家人視訊、每週日分享散步照片，AI 奶奶會貼心提醒並給予鼓勵。</p>
-          <p class="helper-text">可設定固定節奏的互動，養成習慣、遠離孤單。</p>
+          <p>每週五晚上 8 點與家人視訊、每週日分享散步照片，AI 奶奶會提醒並給予鼓勵。</p>
           <a class="btn secondary" href="forum.html">前往社群公園</a>
         </article>
       </section>
@@ -154,291 +137,94 @@
       <p>© 2025 NCCU=MIS+STAT．以科技帶來有溫度的陪伴</p>
     </footer>
   </div>
+
+  <!-- JS 順序：先基礎，再功能模組 -->
   <script src="assets/js/app.js"></script>
   <script src="assets/js/settings.js"></script>
   <script src="assets/js/chat.js"></script>
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    crossorigin=""
-  ></script>
-  <script type="module">
-    import {
-      initLeafletMap,
-      getStoredHome,
-      haversineDistanceMeters,
-      metersToKmString,
-      SAFETY_RADIUS_METERS
-    } from './assets/js/safety-map.js'
+  <script src="assets/js/reminders.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
 
+  <!-- 安全地圖模組 -->
+  <script type="module">
+    import { initLeafletMap, getStoredHome, haversineDistanceMeters, metersToKmString, SAFETY_RADIUS_METERS } from './assets/js/safety-map.js'
     const chipEl = document.getElementById('safetyChip')
     const summaryEl = document.getElementById('safetySummary')
     const detailEl = document.getElementById('safetyDetail')
     const setupBtn = document.getElementById('safetySetupBtn')
     const warningEl = document.getElementById('safetyWarning')
-
     const { map, L } = initLeafletMap('safety-map', { zoomControl: false })
-    const homeIcon = L.divIcon({
-      className: 'home-marker',
-      html: '<span class="home-marker__icon">🏠</span>',
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -28]
-    })
-
-    let safetyCircle = null
-    let homeMarker = null
-    let userMarker = null
-    let hasAlerted = false
-
+    const homeIcon = L.divIcon({ className: 'home-marker', html: '<span class="home-marker__icon">🏠</span>', iconAnchor: [16, 32], popupAnchor: [0, -28] })
+    let safetyCircle = null, homeMarker = null, userMarker = null, hasAlerted = false
     function setChipState (state) {
       chipEl.classList.remove('status-chip--alert', 'status-chip--safe')
-      if (state === 'safe') {
-        chipEl.classList.add('status-chip--safe')
-        chipEl.textContent = '安全範圍內'
-      } else if (state === 'alert') {
-        chipEl.classList.add('status-chip--alert')
-        chipEl.textContent = '安全警示'
-      } else {
-        chipEl.classList.add('status-chip--alert')
-        chipEl.textContent = '尚未設定'
-      }
+      if (state === 'safe') { chipEl.classList.add('status-chip--safe'); chipEl.textContent = '安全範圍內' }
+      else if (state === 'alert') { chipEl.classList.add('status-chip--alert'); chipEl.textContent = '安全警示' }
+      else { chipEl.classList.add('status-chip--alert'); chipEl.textContent = '尚未設定' }
     }
-
-    function clearWarning () {
-      warningEl.hidden = true
-      warningEl.textContent = ''
-    }
-
-    function showWarning (message) {
-      warningEl.hidden = false
-      warningEl.textContent = message
-    }
-
-    function renderNoHomeState () {
-      setChipState('unset')
-      summaryEl.textContent = '尚未設定住家地址。'
-      detailEl.textContent = '請前往快速設定頁面儲存住家位置，以啟用安全範圍提醒。'
-      setupBtn.hidden = false
-      clearWarning()
-    }
-
-    function renderPendingLocation () {
-      setChipState('safe')
-      summaryEl.textContent = '正在取得目前位置…'
-      detailEl.textContent = '取得定位後，系統會更新與住家的距離。'
-      setupBtn.hidden = true
-      clearWarning()
-    }
-
-    function renderSafeState (distance) {
-      setChipState('safe')
-      if (distance <= 30) {
-        summaryEl.textContent = '您目前在家中。'
-      } else {
-        summaryEl.textContent = '您目前在安全範圍內。'
-      }
-      detailEl.textContent = `距離住家約 ${metersToKmString(distance)}，安全範圍為 2 公里。`
-      setupBtn.hidden = true
-      clearWarning()
-    }
-
-    function renderAlertState (distance) {
-      setChipState('alert')
-      summaryEl.textContent = '您已超出安全範圍！'
-      detailEl.textContent = `距離住家約 ${metersToKmString(distance)}，請儘速通知家人或返回安全區域。`
-      setupBtn.hidden = true
-      if (!hasAlerted) {
-        alert('您已超出 2 公里安全範圍！')
-        hasAlerted = true
-      }
-      clearWarning()
-    }
-
-    function handleGeolocationError () {
-      if (safetyCircle) {
-        summaryEl.textContent = '尚未取得目前位置。'
-        detailEl.textContent = '請確認已允許定位權限，以便即時掌握安全狀態。'
-        showWarning('無法取得目前位置（可能尚未授權定位）。')
-      } else {
-        showWarning('無法取得目前位置（可能尚未授權定位）。')
-      }
-    }
-
+    function clearWarning () { warningEl.hidden = true; warningEl.textContent = '' }
+    function showWarning (m) { warningEl.hidden = false; warningEl.textContent = m }
+    function renderNoHomeState () { setChipState('unset'); summaryEl.textContent = '尚未設定住家地址。'; detailEl.textContent = '請前往快速設定頁面儲存住家位置，以啟用安全範圍提醒。'; setupBtn.hidden = false; clearWarning() }
+    function renderPendingLocation () { setChipState('safe'); summaryEl.textContent = '正在取得目前位置…'; detailEl.textContent = '取得定位後將更新與住家的距離。'; setupBtn.hidden = true; clearWarning() }
+    function renderSafeState (distance) { setChipState('safe'); summaryEl.textContent = distance <= 30 ? '您目前在家中。' : '您目前在安全範圍內。'; detailEl.textContent = `距離住家約 ${metersToKmString(distance)}，安全範圍為 2 公里。`; setupBtn.hidden = true; clearWarning() }
+    function renderAlertState (distance) { setChipState('alert'); summaryEl.textContent = '您已超出安全範圍！'; detailEl.textContent = `距離住家約 ${metersToKmString(distance)}，請儘速通知家人或返回安全區域。`; setupBtn.hidden = true; if (!hasAlerted) { alert('您已超出 2 公里安全範圍！'); hasAlerted = true } clearWarning() }
+    function handleGeolocationError () { showWarning('無法取得目前位置（可能尚未授權定位）。') }
     const home = getStoredHome()
-    if (!home) {
-      renderNoHomeState()
-    } else {
+    if (!home) { renderNoHomeState() } else {
       renderPendingLocation()
-      if (homeMarker) {
-        map.removeLayer(homeMarker)
-      }
-      if (safetyCircle) {
-        map.removeLayer(safetyCircle)
-      }
-      homeMarker = L.marker([home.lat, home.lon], { title: '住家位置', icon: homeIcon })
-        .addTo(map)
-        .bindPopup('住家位置')
-      safetyCircle = L.circle([home.lat, home.lon], {
-        radius: SAFETY_RADIUS_METERS,
-        color: '#f87171',
-        fillColor: '#fca5a5',
-        fillOpacity: 0.15,
-        weight: 2,
-        dashArray: '6 6'
-      }).addTo(map)
-      const bounds = safetyCircle.getBounds()
-      map.fitBounds(bounds, { padding: [28, 28] })
+      if (homeMarker) map.removeLayer(homeMarker); if (safetyCircle) map.removeLayer(safetyCircle)
+      homeMarker = L.marker([home.lat, home.lon], { title: '住家位置', icon: homeIcon }).addTo(map).bindPopup('住家位置')
+      safetyCircle = L.circle([home.lat, home.lon], { radius: SAFETY_RADIUS_METERS, color: '#f87171', fillColor: '#fca5a5', fillOpacity: 0.15, weight: 2, dashArray: '6 6' }).addTo(map)
+      const bounds = safetyCircle.getBounds(); map.fitBounds(bounds, { padding: [28, 28] })
     }
-
     function renderUserLocation (coords) {
-      if (userMarker) {
-        map.removeLayer(userMarker)
-        userMarker = null
-      }
-
+      if (userMarker) { map.removeLayer(userMarker); userMarker = null }
       if (home && safetyCircle) {
         const distance = haversineDistanceMeters(coords, [home.lat, home.lon])
-        const bounds = safetyCircle.getBounds().extend(coords)
-        map.fitBounds(bounds, { padding: [28, 28] })
-
-        if (distance <= 30) {
-          if (homeMarker) {
-            homeMarker.openPopup()
-          }
-          renderSafeState(distance)
-          return
-        }
-
-        userMarker = L.marker(coords, { title: '目前位置' })
-          .addTo(map)
-          .bindPopup('目前位置')
-        userMarker.openPopup()
-
-        if (distance <= SAFETY_RADIUS_METERS) {
-          renderSafeState(distance)
-        } else {
-          renderAlertState(distance)
-        }
-        return
+        const bounds = safetyCircle.getBounds().extend(coords); map.fitBounds(bounds, { padding: [28, 28] })
+        if (distance <= 30) { if (homeMarker) homeMarker.openPopup(); renderSafeState(distance); return }
+        userMarker = L.marker(coords, { title: '目前位置' }).addTo(map).bindPopup('目前位置'); userMarker.openPopup()
+        if (distance <= SAFETY_RADIUS_METERS) renderSafeState(distance); else renderAlertState(distance); return
       }
-
-      userMarker = L.marker(coords, { title: '目前位置' })
-        .addTo(map)
-        .bindPopup('目前位置')
-      userMarker.openPopup()
-
-      summaryEl.textContent = '已取得目前位置。'
-      detailEl.textContent = '請在快速設定頁面儲存住家地址，以啟用安全提醒。'
-      setupBtn.hidden = false
-      clearWarning()
-      map.setView(coords, 15)
+      userMarker = L.marker(coords, { title: '目前位置' }).addTo(map).bindPopup('目前位置'); userMarker.openPopup(); summaryEl.textContent = '已取得目前位置。'; detailEl.textContent = '請在快速設定頁面儲存住家地址，以啟用安全提醒。'; setupBtn.hidden = false; map.setView(coords, 15)
     }
-
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const coords = [position.coords.latitude, position.coords.longitude]
-          renderUserLocation(coords)
-        },
-        () => {
-          handleGeolocationError()
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-      )
-    } else {
-      showWarning('瀏覽器不支援定位功能。')
-    }
-
-    if (!home) {
-      map.setView([25.033, 121.5654], 13)
-    }
+    if ('geolocation' in navigator) { navigator.geolocation.getCurrentPosition((pos)=>renderUserLocation([pos.coords.latitude, pos.coords.longitude]), ()=>handleGeolocationError(), { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }) } else { showWarning('瀏覽器不支援定位功能。') }
+    if (!home) { map.setView([25.033, 121.5654], 13) }
   </script>
+
+  <!-- 授權守門與使用者選單 -->
   <script>
     (async function guardAuth() {
       const API_BASE = (localStorage.getItem('AI_COMPANION_API_BASE') || 'http://localhost:3001').replace(/\/$/, '')
-      try {
-        const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
-        if (!res.ok) {
-          location.href = 'login.html?error=login_required'
-        }
-      } catch (e) {
-        location.href = 'login.html?error=login_required'
-      }
+      try { const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' }); if (!res.ok) location.href = 'login.html?error=login_required' } catch { location.href = 'login.html?error=login_required' }
     })()
   </script>
   <script>
     (function initUserMenu(){
       const API_BASE = (localStorage.getItem('AI_COMPANION_API_BASE') || 'http://localhost:3001').replace(/\/$/, '')
-      const btn = document.getElementById('avatarBtn')
-      const dd = document.getElementById('userDropdown')
-      const initialsEl = document.getElementById('avatarInitials')
-      const avatarImg = document.getElementById('avatarImage')
-      const nameEl = document.getElementById('umName')
-      const emailEl = document.getElementById('umEmail')
-      const logoutBtn = document.getElementById('umLogout')
-
-      function toInitials(name) {
-        if (!name) return 'U'
-        const parts = String(name).trim().split(/\s+/)
-        if (parts.length === 1) return parts[0].slice(0,2).toUpperCase()
-        return (parts[0][0] + parts[1][0]).toUpperCase()
-      }
-
-      async function loadUser(){
-        try {
-          const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
-          if (!res.ok) return
-          const json = await res.json()
-          const user = json.user || {}
-          const display = user.full_name || user.username || user.email || '使用者'
-          const avatarUrl = user.avatar_url || user.avatar
-          if (nameEl) nameEl.textContent = display
-          if (emailEl) emailEl.textContent = user.email || ''
-          if (initialsEl) initialsEl.textContent = toInitials(display)
-          if (avatarImg) {
-            if (avatarUrl) {
-              avatarImg.src = avatarUrl
-              avatarImg.alt = `${display} 的頭像`
-              avatarImg.hidden = false
-              if (initialsEl) initialsEl.hidden = true
-            } else {
-              avatarImg.removeAttribute('src')
-              avatarImg.hidden = true
-              if (initialsEl) initialsEl.hidden = false
-            }
-          }
-        } catch {}
-      }
-
-      function openMenu() {
-        dd.hidden = false
-        btn.setAttribute('aria-expanded','true')
-        document.addEventListener('click', onDocClick)
-        document.addEventListener('keydown', onEsc)
-      }
-      function closeMenu() {
-        dd.hidden = true
-        btn.setAttribute('aria-expanded','false')
-        document.removeEventListener('click', onDocClick)
-        document.removeEventListener('keydown', onEsc)
-      }
-      function onDocClick(e){
-        if (!dd.contains(e.target) && !btn.contains(e.target)) closeMenu()
-      }
-      function onEsc(e){ if (e.key === 'Escape') closeMenu() }
-
-      if (btn) btn.addEventListener('click', (e)=>{
-        e.stopPropagation()
-        dd.hidden ? openMenu() : closeMenu()
-      })
-
-      if (logoutBtn) logoutBtn.addEventListener('click', async ()=>{
-        try {
-          await fetch(`${API_BASE}/api/auth/logout`, { method:'POST', credentials:'include' })
-        } catch {}
-        location.href = 'login.html?error=login_required'
-      })
-
+      const btn = document.getElementById('avatarBtn'), dd = document.getElementById('userDropdown'), initialsEl = document.getElementById('avatarInitials'), avatarImg = document.getElementById('avatarImage'), nameEl = document.getElementById('umName'), emailEl = document.getElementById('umEmail'), logoutBtn = document.getElementById('umLogout')
+      function toInitials(name){ if(!name) return 'U'; const parts=String(name).trim().split(/\s+/); return parts.length===1?parts[0].slice(0,2).toUpperCase():(parts[0][0]+parts[1][0]).toUpperCase() }
+      async function loadUser(){ try { const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' }); if(!res.ok) return; const json = await res.json(); const user = json.user || {}; const display = user.full_name || user.username || user.email || '使用者'; const avatarUrl = user.avatar_url || user.avatar; if(nameEl) nameEl.textContent = display; if(emailEl) emailEl.textContent = user.email || ''; if(initialsEl) initialsEl.textContent = toInitials(display); if(avatarImg){ if(avatarUrl){ avatarImg.src=avatarUrl; avatarImg.alt=`${display} 的頭像`; avatarImg.hidden=false; if(initialsEl) initialsEl.hidden=true } else { avatarImg.removeAttribute('src'); avatarImg.hidden=true; if(initialsEl) initialsEl.hidden=false } } } catch {} }
+      function openMenu(){ dd.hidden=false; btn.setAttribute('aria-expanded','true'); document.addEventListener('click', onDocClick); document.addEventListener('keydown', onEsc) }
+      function closeMenu(){ dd.hidden=true; btn.setAttribute('aria-expanded','false'); document.removeEventListener('click', onDocClick); document.removeEventListener('keydown', onEsc) }
+      function onDocClick(e){ if(!dd.contains(e.target) && !btn.contains(e.target)) closeMenu() }
+      function onEsc(e){ if(e.key==='Escape') closeMenu() }
+      if (btn) btn.addEventListener('click', (e)=>{ e.stopPropagation(); dd.hidden ? openMenu() : closeMenu() })
+      if (logoutBtn) logoutBtn.addEventListener('click', async ()=>{ try { await fetch(`${API_BASE}/api/auth/logout`, { method:'POST', credentials:'include' }) } catch {} location.href='login.html?error=login_required' })
       loadUser()
+    })()
+  </script>
+
+  <!-- 單一版本：今日重點提醒（渲染/新增/刪除/完成/通知） -->
+  <script>
+    (function initToday(){
+      const TAIPEI_TZ = 'Asia/Taipei'
+      function todayRangeInTaipei(){ const now = new Date(); const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: TAIPEI_TZ, year:'numeric', month:'2-digit', day:'2-digit' }).format(now); const start = new Date(`${ymd}T00:00:00+08:00`); const end = new Date(start.getTime() + 24*60*60*1000); return { from: start.toISOString(), to: end.toISOString(), ymd } }
+      async function renderToday(){ const listEl = document.getElementById('today-list'); if (!listEl) return; const range = todayRangeInTaipei(); const qs = new URLSearchParams({ from: range.from, to: range.to }).toString(); try { const data = await window.aiCompanion.fetchJson(`/events?${qs}`); const events = Array.isArray(data?.events) ? data.events : []; if (!events.length) { listEl.innerHTML = '<li><span>今天尚無提醒</span></li>'; return } listEl.innerHTML = ''; for (const ev of events) { const li = document.createElement('li'); const t = new Date(ev.start_time); const hh = String(t.getHours()).padStart(2,'0'); const mm = String(t.getMinutes()).padStart(2,'0'); const time = `${hh}:${mm}`; li.innerHTML = `<strong>${time}</strong><span>${(ev.title||'').toString()}</span><button class="btn secondary" data-del style="margin-left:auto">刪除</button>`; li.title = ev.description || ''; li.style.cursor='pointer'; li.addEventListener('click', async ()=>{ try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'PATCH', body: JSON.stringify({ status: !ev.status }) }); ev.status=!ev.status; li.style.opacity = ev.status ? '0.55' : '1' } catch {} }); li.querySelector('[data-del]').addEventListener('click', async (e)=>{ e.stopPropagation(); if (!confirm('確定刪除此提醒？')) return; try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'DELETE' }); li.remove() } catch { alert('刪除失敗，稍後再試') } }); if (ev.status) li.style.opacity='0.55'; listEl.appendChild(li) } } catch (error) { listEl.innerHTML = '<li><span>載入提醒失敗，稍後再試</span></li>'; console.warn('[today events] load failed', error) } }
+      function scheduleNotifications(events){ if (!('Notification' in window)) return; if (Notification.permission !== 'granted') { Notification.requestPermission().catch(()=>{}) } const now = Date.now(); for (const ev of events) { const target = ev.reminder_time || ev.start_time; if (!target) continue; const at = Date.parse(target), delay = at - now; if (Number.isFinite(delay) && delay > 0 && delay <= 24*60*60*1000) { setTimeout(()=>{ try { if (Notification.permission==='granted') new Notification(ev.title || '提醒', { body: ev.description || '時間到了', silent: false }) } catch {} }, delay) } } }
+      async function loadAndScheduleToday(){ const range = todayRangeInTaipei(); const qs = new URLSearchParams({ from: range.from, to: range.to }).toString(); try { const data = await window.aiCompanion.fetchJson(`/events?${qs}`); const events = Array.isArray(data?.events) ? data.events : []; scheduleNotifications(events) } catch {} }
+      function bindAddForm(){ const toggleBtn = document.getElementById('addEventBtn'), form = document.getElementById('addEventForm'), cancelBtn = document.getElementById('cancelAdd'), dateEl = document.getElementById('evtDate'), timeEl = document.getElementById('evtTime'), remindEl = document.getElementById('evtRemind'); const range = todayRangeInTaipei(); if (dateEl) dateEl.value = range.ymd; if (timeEl) timeEl.value = '09:00'; toggleBtn.addEventListener('click', ()=>{ form.style.display = form.style.display === 'none' ? 'block' : 'none' }); if (cancelBtn) cancelBtn.addEventListener('click', ()=>{ form.style.display='none' }); form.addEventListener('submit', async (e)=>{ e.preventDefault(); const title = document.getElementById('evtTitle').value.trim(), category = document.getElementById('evtCategory').value || null, desc = document.getElementById('evtDesc').value.trim() || null, date = dateEl.value, time = timeEl.value, rtime = remindEl.value; if (!title || !date || !time) { alert('請填寫標題/日期/時間'); return } const startIso = `${date}T${time}:00+08:00`, remindIso = rtime ? `${date}T${rtime}:00+08:00` : startIso; try { await window.aiCompanion.fetchJson('/events', { method:'POST', body: JSON.stringify({ title, category, description: desc, start_time: startIso, reminder_time: remindIso }) }); form.reset(); form.style.display='none'; await renderToday(); await loadAndScheduleToday() } catch { alert('新增失敗，稍後再試') } }) }
+      renderToday(); loadAndScheduleToday(); bindAddForm()
     })()
   </script>
 </body>

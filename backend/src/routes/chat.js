@@ -1,6 +1,6 @@
 import express from 'express'
 import { transcribeAudio } from '../services/speechService.js'
-import { generateChatResponse } from '../services/geminiService.js'
+import { generateChatResponse, refineReminderTitle } from '../services/geminiService.js'
 import { synthesizeSpeech } from '../services/ttsService.js'
 
 const router = express.Router()
@@ -73,3 +73,17 @@ router.post('/', async (req, res, next) => {
 })
 
 export default router
+
+// Lightweight endpoint for refining reminder titles using LLM.
+router.post('/refine-title', async (req, res, next) => {
+  try {
+    const { rawText, hints } = req.body || {}
+    if (!rawText || typeof rawText !== 'string') {
+      return res.status(400).json({ error: 'invalid_payload' })
+    }
+    const title = await refineReminderTitle({ rawText, hints })
+    return res.json({ title })
+  } catch (error) {
+    next(error)
+  }
+})

@@ -1,68 +1,53 @@
-"use strict";
+// assets/js/persona.js
 
-(function () {
-  const personaLabels = {
-    child: "活力童年版",
-    adult: "溫柔青壯版",
-    senior: "智慧長者版"
-  };
+document.addEventListener("DOMContentLoaded", () => {
+  const personaButtons = document.querySelectorAll(".persona-pick");
+  const status = document.getElementById("personaStatus");
+  let selectedPersona = localStorage.getItem("persona") || null;
 
-  const getStatusText = (key) => {
-    const label = personaLabels[key] ?? personaLabels.senior;
-    return `目前已設定的陪聊夥伴：${label}`;
-  };
+  // 初始化狀態
+  if (selectedPersona) updateButtons(selectedPersona);
 
-  const markSelection = (persona) => {
-    document.querySelectorAll(".persona-card").forEach((card) => {
-      const cardPersona = card.dataset.persona;
-      const isSelected = cardPersona === persona;
-      card.classList.toggle("is-selected", isSelected);
-      card.setAttribute("aria-pressed", isSelected ? "true" : "false");
-      card.querySelectorAll(".persona-pick").forEach((button) => {
-        button.setAttribute("aria-pressed", isSelected ? "true" : "false");
-      });
-    });
-
-    const status = document.querySelector("#persona-status");
-    if (status) {
-      status.textContent = getStatusText(persona);
-    }
-  };
-
-  const setupInteractions = () => {
-    document.querySelectorAll(".persona-card").forEach((card) => {
-      const persona = card.dataset.persona;
-      if (!persona) return;
-
-      const selectPersona = () => {
-        window.aiCompanion.setSettings({ persona });
-        markSelection(persona);
-      };
-
-      card.addEventListener("click", (event) => {
-        const buttonClicked = event.target.closest("button, a");
-        if (!buttonClicked) {
-          selectPersona();
-        }
-      });
-      card.querySelectorAll(".persona-pick").forEach((button) => {
-        button.addEventListener("click", (event) => {
-          event.preventDefault();
-          selectPersona();
-        });
-      });
-    });
-  };
-
-  window.addEventListener("DOMContentLoaded", () => {
-    if (!window.aiCompanion) return;
-
-    const { persona } = window.aiCompanion.settings;
-    markSelection(persona);
-    setupInteractions();
-
-    window.aiCompanion.subscribeSettings((settings) => {
-      markSelection(settings.persona);
+  personaButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      personaButtons.forEach(b => { b.classList.remove("btn-selected"); b.textContent = "選擇"; });
+      btn.classList.add("btn-selected");
+      btn.textContent = "已選擇";
+      selectedPersona = btn.closest(".companion-card").dataset.persona;
+      localStorage.setItem("persona", selectedPersona);
+      const name = btn.closest(".companion-card").querySelector("h3").textContent;
+      status.textContent = `目前已設定的陪聊夥伴：${name}`;
     });
   });
-})();
+
+  function updateButtons(key) {
+    personaButtons.forEach(btn => {
+      const card = btn.closest(".companion-card");
+      const persona = card.dataset.persona;
+      if (persona === key) {
+        btn.classList.add("btn-selected");
+        btn.textContent = "已選擇";
+      } else {
+        btn.classList.remove("btn-selected");
+        btn.textContent = "選擇";
+      }
+    });
+    const activeCard = document.querySelector(`[data-persona="${key}"] h3`);
+    status.textContent = activeCard ? `目前已設定的陪聊夥伴：${activeCard.textContent}` : "目前尚未選擇陪聊夥伴";
+  }
+
+  // 表單送出
+  const form = document.getElementById("prefForm");
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    if (!selectedPersona) return alert("請先選擇一個陪聊夥伴");
+
+    const tone = document.getElementById("tone").value;
+    const topics = document.getElementById("topics").value.trim();
+    const data = { persona: selectedPersona, tone, topics };
+
+    localStorage.setItem("preferences", JSON.stringify(data));
+    console.log("已儲存偏好設定：", data);
+    alert("已儲存偏好設定");
+  });
+});

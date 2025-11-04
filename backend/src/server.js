@@ -9,6 +9,7 @@ import authRouter from './routes/auth.js'
 import usersRouter from './routes/users.js'
 import rankingRouter from './routes/ranking.js'
 import geofenceRouter from './routes/geofence.js'
+import eventsRouter from './routes/events.js'
 
 const app = express()
 const defaultOrigins = [
@@ -36,6 +37,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/ranking', rankingRouter)
 app.use('/api/geofence', geofenceRouter)
+app.use('/api/events', eventsRouter)
 
 app.use((err, req, res, next) => {
   console.error(err)
