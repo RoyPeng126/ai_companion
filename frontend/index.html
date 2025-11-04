@@ -240,7 +240,69 @@
       async function renderToday(){ const listEl = document.getElementById('today-list'); if (!listEl) return; const range = todayRangeInTaipei(); const qs = new URLSearchParams({ from: range.from, to: range.to }).toString(); try { const data = await window.aiCompanion.fetchJson(`/events?${qs}`); const events = Array.isArray(data?.events) ? data.events : []; if (!events.length) { listEl.innerHTML = '<li><span>今天尚無提醒</span></li>'; return } listEl.innerHTML = ''; for (const ev of events) { const li = document.createElement('li'); const t = new Date(ev.start_time); const hh = String(t.getHours()).padStart(2,'0'); const mm = String(t.getMinutes()).padStart(2,'0'); const time = `${hh}:${mm}`; li.innerHTML = `<strong>${time}</strong><span>${(ev.title||'').toString()}</span><button class="btn secondary" data-del style="margin-left:auto">刪除</button>`; li.title = ev.description || ''; li.style.cursor='pointer'; li.addEventListener('click', async ()=>{ try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'PATCH', body: JSON.stringify({ status: !ev.status }) }); ev.status=!ev.status; li.style.opacity = ev.status ? '0.55' : '1' } catch {} }); li.querySelector('[data-del]').addEventListener('click', async (e)=>{ e.stopPropagation(); if (!confirm('確定刪除此提醒？')) return; try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'DELETE' }); li.remove() } catch { alert('刪除失敗，稍後再試') } }); if (ev.status) li.style.opacity='0.55'; listEl.appendChild(li) } } catch (error) { listEl.innerHTML = '<li><span>載入提醒失敗，稍後再試</span></li>'; console.warn('[today events] load failed', error) } }
       function scheduleNotifications(events){ if (!('Notification' in window)) return; if (Notification.permission !== 'granted') { Notification.requestPermission().catch(()=>{}) } const now = Date.now(); for (const ev of events) { const target = ev.reminder_time || ev.start_time; if (!target) continue; const at = Date.parse(target), delay = at - now; if (Number.isFinite(delay) && delay > 0 && delay <= 24*60*60*1000) { setTimeout(()=>{ try { if (Notification.permission==='granted') new Notification(ev.title || '提醒', { body: ev.description || '時間到了', silent: false }) } catch {} }, delay) } } }
       async function loadAndScheduleToday(){ const range = todayRangeInTaipei(); const qs = new URLSearchParams({ from: range.from, to: range.to }).toString(); try { const data = await window.aiCompanion.fetchJson(`/events?${qs}`); const events = Array.isArray(data?.events) ? data.events : []; scheduleNotifications(events) } catch {} }
-      function bindAddForm(){ const toggleBtn = document.getElementById('addEventBtn'), form = document.getElementById('addEventForm'), cancelBtn = document.getElementById('cancelAdd'), dateEl = document.getElementById('evtDate'), timeEl = document.getElementById('evtTime'), remindEl = document.getElementById('evtRemind'); const range = todayRangeInTaipei(); if (dateEl) dateEl.value = range.ymd; if (timeEl) timeEl.value = '09:00'; toggleBtn.addEventListener('click', ()=>{ form.style.display = form.style.display === 'none' ? 'block' : 'none' }); if (cancelBtn) cancelBtn.addEventListener('click', ()=>{ form.style.display='none' }); form.addEventListener('submit', async (e)=>{ e.preventDefault(); const title = document.getElementById('evtTitle').value.trim(), category = document.getElementById('evtCategory').value || null, desc = document.getElementById('evtDesc').value.trim() || null, date = dateEl.value, time = timeEl.value, rtime = remindEl.value; if (!title || !date || !time) { alert('請填寫標題/日期/時間'); return } const startIso = `${date}T${time}:00+08:00`, remindIso = rtime ? `${date}T${rtime}:00+08:00` : startIso; try { await window.aiCompanion.fetchJson('/events', { method:'POST', body: JSON.stringify({ title, category, description: desc, start_time: startIso, reminder_time: remindIso }) }); form.reset(); form.style.display='none'; await renderToday(); await loadAndScheduleToday() } catch { alert('新增失敗，稍後再試') } }) }
+      function bindAddForm(){
+        const toggleBtn = document.getElementById('addEventBtn')
+        const form = document.getElementById('addEventForm')
+        if (!toggleBtn || !form) {
+          console.warn('[today events] add form not found, skip binding')
+          return
+        }
+
+        const cancelBtn = document.getElementById('cancelAdd')
+        const dateEl = document.getElementById('evtDate')
+        const timeEl = document.getElementById('evtTime')
+        const remindEl = document.getElementById('evtRemind')
+
+        const range = todayRangeInTaipei()
+        if (dateEl) dateEl.value = range.ymd
+        if (timeEl) timeEl.value = '09:00'
+
+        toggleBtn.addEventListener('click', () => {
+          form.style.display = form.style.display === 'none' ? 'block' : 'none'
+        })
+
+        if (cancelBtn) {
+          cancelBtn.addEventListener('click', () => {
+            form.style.display = 'none'
+          })
+        }
+
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault()
+          const title = document.getElementById('evtTitle')?.value.trim()
+          const category = document.getElementById('evtCategory')?.value || null
+          const desc = document.getElementById('evtDesc')?.value.trim() || null
+          const date = dateEl?.value
+          const time = timeEl?.value
+          const rtime = remindEl?.value
+          if (!title || !date || !time) {
+            alert('請填寫標題/日期/時間')
+            return
+          }
+
+          const startIso = `${date}T${time}:00+08:00`
+          const remindIso = rtime ? `${date}T${rtime}:00+08:00` : startIso
+
+          try {
+            await window.aiCompanion.fetchJson('/events', {
+              method: 'POST',
+              body: JSON.stringify({
+                title,
+                category,
+                description: desc,
+                start_time: startIso,
+                reminder_time: remindIso
+              })
+            })
+            form.reset()
+            form.style.display = 'none'
+            await renderToday()
+            await loadAndScheduleToday()
+          } catch {
+            alert('新增失敗，稍後再試')
+          }
+        })
+      }
       renderToday(); loadAndScheduleToday(); bindAddForm()
     })()
   </script>

@@ -93,11 +93,147 @@
   let conversation = [];
   let memos = [];
   let isBusy = false;
-  let recorder = null;
-  let audioChunks = [];
   let mediaStream = null;
+  let audioContext = null;
+  let sourceNode = null;
+  let processorNode = null;
+  let silentGainNode = null;
+  let recordingSampleRate = 16000;
+  let recordedBuffers = [];
+  let recordedLength = 0;
   let recording = false;
   let activePersona = "senior";
+  const TARGET_SAMPLE_RATE = 16000;
+
+  const resetRecordingStorage = () => {
+    recordedBuffers = [];
+    recordedLength = 0;
+  };
+
+  const stopMediaTracks = () => {
+    if (!mediaStream) return;
+    try {
+      mediaStream.getTracks().forEach((track) => track.stop());
+    } catch (_) {}
+    mediaStream = null;
+  };
+
+  const closeAudioResources = async () => {
+    if (processorNode) {
+      try {
+        processorNode.disconnect();
+      } catch (_) {}
+      processorNode.onaudioprocess = null;
+      processorNode = null;
+    }
+    if (sourceNode) {
+      try {
+        sourceNode.disconnect();
+      } catch (_) {}
+      sourceNode = null;
+    }
+    if (silentGainNode) {
+      try {
+        silentGainNode.disconnect();
+      } catch (_) {}
+      silentGainNode = null;
+    }
+    if (audioContext) {
+      try {
+        await audioContext.close();
+      } catch (_) {}
+      audioContext = null;
+    }
+  };
+
+  const mergeBuffers = (buffers, totalLength) => {
+    const result = new Float32Array(totalLength);
+    let offset = 0;
+    buffers.forEach((buffer) => {
+      result.set(buffer, offset);
+      offset += buffer.length;
+    });
+    return result;
+  };
+
+  const resampleBuffer = (buffer, fromRate, toRate) => {
+    if (!buffer || !buffer.length) return new Float32Array(0);
+    if (!Number.isFinite(fromRate) || fromRate <= 0) return buffer;
+    if (!Number.isFinite(toRate) || toRate <= 0) return buffer;
+    if (fromRate === toRate) return buffer;
+
+    if (fromRate < toRate) {
+      const ratio = fromRate / toRate;
+      const newLength = Math.ceil(buffer.length / ratio);
+      const result = new Float32Array(newLength);
+      for (let i = 0; i < newLength; i++) {
+        const index = i * ratio;
+        const lowerIndex = Math.floor(index);
+        const upperIndex = Math.min(Math.ceil(index), buffer.length - 1);
+        const interpolation = index - lowerIndex;
+        const lowerValue = buffer[lowerIndex] ?? 0;
+        const upperValue = buffer[upperIndex] ?? lowerValue;
+        result[i] = lowerValue + (upperValue - lowerValue) * interpolation;
+      }
+      return result;
+    }
+
+    const ratio = fromRate / toRate;
+    const newLength = Math.floor(buffer.length / ratio);
+    const result = new Float32Array(newLength);
+    let offsetResult = 0;
+    let offsetBuffer = 0;
+
+    while (offsetResult < newLength) {
+      const nextOffsetBuffer = Math.round((offsetResult + 1) * ratio);
+      let accum = 0;
+      let count = 0;
+
+      for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++) {
+        accum += buffer[i];
+        count++;
+      }
+
+      result[offsetResult] = count ? (accum / count) : 0;
+      offsetResult++;
+      offsetBuffer = nextOffsetBuffer;
+    }
+
+    return result;
+  };
+
+  const encodePCM16 = (floatBuffer) => {
+    if (!floatBuffer || !floatBuffer.length) return new Uint8Array(0);
+    const output = new DataView(new ArrayBuffer(floatBuffer.length * 2));
+    let offset = 0;
+
+    for (let i = 0; i < floatBuffer.length; i++, offset += 2) {
+      let sample = Math.max(-1, Math.min(1, floatBuffer[i]));
+      sample = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+      output.setInt16(offset, sample, true);
+    }
+
+    return new Uint8Array(output.buffer);
+  };
+
+  const uint8ToBase64 = (bytes) => {
+    if (!bytes || !bytes.length) return "";
+    let binary = "";
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    return btoa(binary);
+  };
+
+  const exportRecordingToBase64 = () => {
+    if (!recordedBuffers.length || !recordedLength) return null;
+    const merged = mergeBuffers(recordedBuffers, recordedLength);
+    const resampled = resampleBuffer(merged, recordingSampleRate, TARGET_SAMPLE_RATE);
+    const pcmBytes = encodePCM16(resampled);
+    return uint8ToBase64(pcmBytes);
+  };
   const updateRecordButton = (isRecording) => {
     recordButton.classList.toggle("recording", isRecording);
     recordButton.setAttribute("aria-label", isRecording ? "停止錄音" : "開始錄音");
@@ -346,21 +482,6 @@
     return { title: conciseTitle, category, startIso };
   };
 
-  const blobToBase64 = (blob) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result;
-      if (!result) {
-        reject(new Error("音訊資料轉換失敗"));
-        return;
-      }
-      const base64 = String(result).split(",")[1];
-      resolve(base64);
-    };
-    reader.onerror = () => reject(new Error("音訊資料讀取失敗"));
-    reader.readAsDataURL(blob);
-  });
-
   const playAudioResponse = (audioPayload) => {
     if (!audioPayload) return;
     const {
@@ -401,7 +522,8 @@
     if (audioBase64) {
       payload.audio = {
         content: audioBase64,
-        encoding: "WEBM_OPUS"
+        encoding: "LINEAR16",
+        sampleRateHertz: TARGET_SAMPLE_RATE
       };
     }
 
@@ -448,19 +570,37 @@
     }
   };
 
-  const stopRecorder = () => {
+  const stopRecorder = async () => {
     if (!recording) return;
 
     recording = false;
     updateRecordButton(false);
 
-    if (recorder && recorder.state !== "inactive") {
-      recorder.stop();
+    await closeAudioResources();
+    stopMediaTracks();
+
+    if (!recordedLength) {
+      resetRecordingStorage();
+      setStatus("沒有偵測到語音內容，請再試一次。", true);
+      return;
     }
 
-    if (mediaStream) {
-      mediaStream.getTracks().forEach((track) => track.stop());
-      mediaStream = null;
+    const placeholder = createMessage("user", "語音訊息轉寫中...");
+
+    try {
+      const audioBase64 = exportRecordingToBase64();
+      resetRecordingStorage();
+      if (!audioBase64) {
+        setStatus("語音資料轉換失敗，請重新錄製。", true);
+        placeholder.textContent = "語音轉寫失敗，請重試一次。";
+        return;
+      }
+      await sendToChat({ audioBase64, placeholder });
+    } catch (error) {
+      console.error("[AI Companion] 語音處理錯誤。", error);
+      setStatus(error.message || "語音轉寫失敗，請重錄一次。", true);
+      placeholder.textContent = "語音轉寫失敗，請重錄一次。";
+      resetRecordingStorage();
     }
   };
 
@@ -472,54 +612,53 @@
 
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunks = [];
-      recorder = new MediaRecorder(mediaStream, { mimeType: "audio/webm;codecs=opus" });
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) {
+        throw new Error("瀏覽器不支援錄音功能，請更新或改用其他瀏覽器。");
+      }
 
-      recorder.addEventListener("dataavailable", (event) => {
-        if (event.data && event.data.size > 0) {
-          audioChunks.push(event.data);
-        }
-      });
+      audioContext = new AudioContextClass({ sampleRate: TARGET_SAMPLE_RATE });
+      await audioContext.resume();
+      recordingSampleRate = audioContext.sampleRate;
+      resetRecordingStorage();
 
-      recorder.addEventListener("stop", async () => {
-        if (!audioChunks.length) {
-          setStatus("沒有偵測到語音內容，請再試一次。", true);
-          return;
-        }
+      sourceNode = audioContext.createMediaStreamSource(mediaStream);
+      const bufferSize = 4096;
+      if (!audioContext.createScriptProcessor) {
+        throw new Error("瀏覽器不支援即時錄音處理，請更新或改用其他瀏覽器。");
+      }
+      processorNode = audioContext.createScriptProcessor(bufferSize, 1, 1);
+      processorNode.onaudioprocess = (event) => {
+        if (!recording) return;
+        const channelData = event.inputBuffer.getChannelData(0);
+        recordedBuffers.push(new Float32Array(channelData));
+        recordedLength += channelData.length;
+      };
 
-        const blob = new Blob(audioChunks, { type: "audio/webm;codecs=opus" });
-        audioChunks = [];
+      silentGainNode = audioContext.createGain();
+      silentGainNode.gain.value = 0;
 
-        const placeholder = createMessage("user", "語音訊息轉寫中...");
-        try {
-          const audioBase64 = await blobToBase64(blob);
-          await sendToChat({ audioBase64, placeholder });
-        } catch (error) {
-          console.error("[AI Companion] 語音處理錯誤。", error);
-          setStatus(error.message, true);
-          placeholder.textContent = "語音轉寫失敗，請重錄一次。";
-        }
-      });
+      sourceNode.connect(processorNode);
+      processorNode.connect(silentGainNode);
+      silentGainNode.connect(audioContext.destination);
 
-      recorder.start();
       recording = true;
       updateRecordButton(true);
       setStatus("錄音中，完成後請再次按下停止。");
     } catch (error) {
       console.error("[AI Companion] 無法啟動錄音。", error);
-      setStatus("麥克風存取遭拒或無法啟動，請檢查瀏覽器權限。", true);
-      if (mediaStream) {
-        mediaStream.getTracks().forEach((track) => track.stop());
-        mediaStream = null;
-      }
+      setStatus(error.message || "麥克風存取遭拒或無法啟動，請檢查瀏覽器權限。", true);
+      resetRecordingStorage();
+      await closeAudioResources();
+      stopMediaTracks();
     }
   };
 
-  const toggleRecording = () => {
+  const toggleRecording = async () => {
     if (recording) {
-      stopRecorder();
+      await stopRecorder();
     } else {
-      startRecording();
+      await startRecording();
     }
   };
 

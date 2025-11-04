@@ -28,8 +28,8 @@ router.post('/', async (req, res, next) => {
       stt = await transcribeAudio({
         audioContent: audio.content,
         languageCode: audio.languageCode ?? 'zh-TW',
-        encoding: audio.encoding ?? 'WEBM_OPUS',
-        sampleRateHertz: audio.sampleRateHertz
+        encoding: audio.encoding ?? 'LINEAR16',
+        sampleRateHertz: audio.sampleRateHertz ?? 16000
       })
       transcript = stt.transcript
     }

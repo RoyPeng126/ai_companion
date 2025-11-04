@@ -4,7 +4,7 @@
 
 ## 專案目錄
 - `frontend/`：行動優先的靜態介面，含登入註冊、角色導覽、陪伴設定、排行榜、社群與安全地圖等頁面。
-- `backend/`：Node.js + Express 服務，整合 Gemini 聊天、Google Speech-to-Text、語音合成、PostgreSQL 使用者資料與地理圍欄通知。
+- `backend/`：Node.js + Express 服務，整合 Gemini 聊天、雅婷語音轉文字、語音合成、PostgreSQL 使用者資料與地理圍欄通知。
 
 ## 核心體驗
 - **語音助理與備忘錄**：首頁聊天卡支援文字 / 語音輸入，串接 Gemini 回覆並自動儲存備忘錄，聊天語系與聲線會依 persona 與語言設定同步更新。
@@ -16,7 +16,7 @@
 ## 後端服務
 - Express 伺服器集中於 `backend/src/server.js`，啟用 CORS、日誌與錯誤處理。
 - `/api/auth` 路由提供註冊、登入、`/me` 查詢、修改密碼；採 JWT（簽發後以 HttpOnly Cookie 儲存）與 PostgreSQL `users` 資料表。
-- `/api/chat` 將語音送往 Google STT，再帶入 persona prompt 呼叫 Gemini，最後使用語音合成服務回傳音檔。
+- `/api/chat` 將語音送往雅婷即時語音轉文字服務，再帶入 persona prompt 呼叫 Gemini，最後使用語音合成服務回傳音檔。
 - `/api/ranking` 使用 `backend/data/healthMetrics.json` 作為暫存倉，可依需求換成實際穿戴裝置或資料庫。
 - `/api/geofence` 結合 `geolib` 判斷是否離開安全範圍，並透過 `notificationService` 暫存不同家族的警示。
 
@@ -32,7 +32,7 @@
 ### 需求
 - Node.js 18+（內建 `fetch` 與頂層 await）、pnpm 8+。
 - PostgreSQL（本地或雲端，`.env` 需指定 `DATABASE_URL`）。
-- Google Cloud Speech-to-Text 與 Gemini API 金鑰、語音合成服務金鑰。
+- Yating ASR 與 Gemini API 金鑰、語音合成服務金鑰。
 
 ### 安裝步驟
 1. `cd backend && pnpm install`
@@ -55,7 +55,7 @@ pnpm run dev
 - 核心服務：`PORT`（預設 3001）、`CORS_ORIGINS`。
 - 身份驗證：`JWT_SECRET`、`TOKEN_TTL_SECONDS`（可選，預設 7 天）。
 - Gemini：`GEMINI_API_KEY`、`GEMINI_MODEL`、`GEMINI_MAX_OUTPUT_TOKENS`。
-- 語音辨識：`GOOGLE_APPLICATION_CREDENTIALS` 或 `GOOGLE_APPLICATION_CREDENTIALS_JSON`。
+- 語音辨識：`YATING_STT_API_KEY`、（選填）`YATING_STT_PIPELINE`、`YATING_STT_CUSTOM_MODEL`、`YATING_STT_TIMEOUT_MS`。
 - 語音合成：`TTS_API_KEY`、`TTS_VOICE_MODEL`、`TTS_AUDIO_ENCODING`、`TTS_AUDIO_SAMPLE_RATE`。
 - 資料庫：`DATABASE_URL`（需指定 TLS 參數或使用雲端服務提供的連線字串）。
 
@@ -67,6 +67,7 @@ pnpm run dev
 
 ## 最新更新
 - 新增 welcome → register-role → registration 的身分導向式導覽，引導不同使用者完成設定。
+- 語音辨識改接雅婷即時語音轉文字服務，並調整前端錄音流程輸出 16k PCM。
 - 後端加入 PostgreSQL 使用者資料表、cookie JWT 登入、個人檔案編輯與密碼修改流程。
 - 聊天服務改用 Gemini 2.5 Flash，支援 persona 設定、語系與語速同步到語音合成。
 - 安全守護流程整合 Leaflet 地圖、台灣行政區搜尋與 `/api/geofence/check` 提醒。
