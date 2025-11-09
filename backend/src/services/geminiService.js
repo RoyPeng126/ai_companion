@@ -256,3 +256,56 @@ export const refineReminderTitle = async ({ rawText, hints = {} }) => {
     return line.replace(/^\{"title"\s*:\s*"|"\}\s*$/g, '').trim()
   }
 }
+
+// Classify reminder fields from raw text. Returns a JSON object with optional
+// fields: { title, date, time, location, category, description }
+export const classifyReminder = async ({ rawText, tz = 'Asia/Taipei' }) => {
+  if (!rawText || typeof rawText !== 'string') return {}
+
+  const genAI = getClient()
+  const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest'
+  const requestOptions = process.env.GEMINI_API_VERSION
+    ? { apiVersion: process.env.GEMINI_API_VERSION }
+    : undefined
+  const model = genAI.getGenerativeModel(
+    { model: modelName },
+    requestOptions
+  )
+
+  const guidance = [
+    '你是一個行程抽取器。',
+    '任務：從使用者的中文口語文字抽取提醒欄位為 JSON。',
+    '欄位: title(簡短動作描述), date(YYYY-MM-DD), time(HH:MM 24h), location, category(one of: medicine, exercise, appointment, chat, other), description。',
+    '若無法判斷的欄位省略，不要亂猜。時間若提到「半」請輸出 30 分；若有 上午/下午/晚上/中午 請轉 24 小時。',
+    `時區: ${tz}，僅需輸出本地日期與 24 小時制時間。`,
+    '輸出格式: 僅回傳單一 JSON 物件，無其他文字。'
+  ].join('\n')
+
+  const userMsg = `輸入: ${rawText}`
+  const requestPayload = {
+    systemInstruction: { role: 'system', parts: [{ text: guidance }] },
+    contents: [ { role: 'user', parts: [{ text: userMsg }] } ],
+    generationConfig: { temperature: 0.1, topP: 0.9, responseMimeType: 'application/json' }
+  }
+
+  try {
+    const result = await model.generateContent(requestPayload)
+    const jsonText = result?.response?.text?.() ?? ''
+    try {
+      const parsed = JSON.parse(jsonText)
+      const out = {}
+      if (typeof parsed.title === 'string') out.title = parsed.title.trim()
+      if (typeof parsed.date === 'string') out.date = parsed.date.trim()
+      if (typeof parsed.time === 'string') out.time = parsed.time.trim()
+      if (typeof parsed.location === 'string') out.location = parsed.location.trim()
+      if (typeof parsed.category === 'string') out.category = parsed.category.trim()
+      if (typeof parsed.description === 'string') out.description = parsed.description.trim()
+      return out
+    } catch (_) {
+      return {}
+    }
+  } catch (error) {
+    console.warn('[AI Companion] classifyReminder error', error)
+    return {}
+  }
+}

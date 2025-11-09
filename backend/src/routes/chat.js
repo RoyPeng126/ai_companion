@@ -1,6 +1,6 @@
 import express from 'express'
 import { transcribeAudio } from '../services/speechService.js'
-import { generateChatResponse, refineReminderTitle } from '../services/geminiService.js'
+import { generateChatResponse, refineReminderTitle, classifyReminder } from '../services/geminiService.js'
 import { synthesizeSpeech } from '../services/ttsService.js'
 
 const router = express.Router()
@@ -83,6 +83,20 @@ router.post('/refine-title', async (req, res, next) => {
     }
     const title = await refineReminderTitle({ rawText, hints })
     return res.json({ title })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Extract reminder fields (title/date/time/location/category/description) from raw text
+router.post('/classify', async (req, res, next) => {
+  try {
+    const { rawText, tz } = req.body || {}
+    if (!rawText || typeof rawText !== 'string') {
+      return res.status(400).json({ error: 'invalid_payload' })
+    }
+    const data = await classifyReminder({ rawText, tz: tz || 'Asia/Taipei' })
+    return res.json(data)
   } catch (error) {
     next(error)
   }

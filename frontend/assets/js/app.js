@@ -28,6 +28,65 @@
     tai_male_1: "senior"
   };
 
+  const ROLE_STORAGE_KEY = "ai-companion-active-role";
+  const ROLE_FALLBACK_KEYS = [ROLE_STORAGE_KEY, "ai-companion-register-role"];
+
+  const normalizeRoleValue = (value) => {
+    const text = typeof value === "string" ? value.trim().toLowerCase() : "";
+    if (!text) return "";
+    if (["grandpa", "grandma", "senior", "elder"].includes(text)) return "elder";
+    if (text === "family") return "family";
+    if (text === "social-worker" || text === "caregiver") return "caregiver";
+    return text;
+  };
+
+  const readRoleFromStorage = (key) => {
+    try {
+      const sessionValue = window.sessionStorage?.getItem
+        ? window.sessionStorage.getItem(key)
+        : null;
+      if (sessionValue) return sessionValue;
+    } catch (_) {}
+    try {
+      const localValue = window.localStorage?.getItem
+        ? window.localStorage.getItem(key)
+        : null;
+      if (localValue) return localValue;
+    } catch (_) {}
+    return "";
+  };
+
+  const getStoredRole = () => {
+    for (const key of ROLE_FALLBACK_KEYS) {
+      const candidate = normalizeRoleValue(readRoleFromStorage(key));
+      if (candidate) return candidate;
+    }
+    return "";
+  };
+
+  const persistRoleValue = (value) => {
+    const normalized = normalizeRoleValue(value);
+    try {
+      if (normalized) {
+        if (window.sessionStorage?.setItem) {
+          window.sessionStorage.setItem(ROLE_STORAGE_KEY, normalized);
+        }
+      } else if (window.sessionStorage?.removeItem) {
+        window.sessionStorage.removeItem(ROLE_STORAGE_KEY);
+      }
+    } catch (_) {}
+    try {
+      if (normalized) {
+        if (window.localStorage?.setItem) {
+          window.localStorage.setItem(ROLE_STORAGE_KEY, normalized);
+        }
+      } else if (window.localStorage?.removeItem) {
+        window.localStorage.removeItem(ROLE_STORAGE_KEY);
+      }
+    } catch (_) {}
+    return normalized;
+  };
+
   function resolvePersonaDefaultVoice(persona, languageCode = DEFAULT_LANGUAGE_CODE) {
     const personaKey = PERSONA_DEFAULT_VOICES[persona] ? persona : DEFAULT_PERSONA_KEY;
     const personaVoices = PERSONA_DEFAULT_VOICES[personaKey] ?? PERSONA_DEFAULT_VOICES.senior;
@@ -51,6 +110,21 @@
   const DEFAULT_SETTINGS = {
     apiBaseUrl: "http://localhost:3001/api",
     persona: DEFAULT_PERSONA_KEY,
+    // Reminder-related defaults
+    reminder: {
+      required: {
+        title: true,
+        date: true,
+        time: true,
+        category: false,
+        description: false,
+        location: false
+      },
+      // Lead time default: 30 minutes before
+      lead: { mode: "30m", minutes: 30 },
+      // Ask for confirmation in chat before creating
+      confirm: true
+    },
     speechConfig: {
       languageCode: DEFAULT_LANGUAGE_CODE,
       voiceName: resolvePersonaDefaultVoice("senior", DEFAULT_LANGUAGE_CODE),
@@ -84,11 +158,31 @@
         );
       }
 
+      // Merge reminder settings deeply with sensible defaults
+      const persistedReminder = parsed?.reminder ?? {};
+      const mergedReminder = {
+        ...DEFAULT_SETTINGS.reminder,
+        ...persistedReminder,
+        required: {
+          ...DEFAULT_SETTINGS.reminder.required,
+          ...(persistedReminder?.required ?? {})
+        },
+        lead: {
+          ...DEFAULT_SETTINGS.reminder.lead,
+          ...(persistedReminder?.lead ?? {})
+        },
+        confirm:
+          typeof persistedReminder?.confirm === "boolean"
+            ? persistedReminder.confirm
+            : DEFAULT_SETTINGS.reminder.confirm
+      };
+
       return {
         ...DEFAULT_SETTINGS,
         ...parsed,
         persona: normalizedPersona,
-        speechConfig: mergedSpeech
+        speechConfig: mergedSpeech,
+        reminder: mergedReminder
       };
     } catch (error) {
       console.warn("[AI Companion] 無法讀取設定，將使用預設值。", error);
@@ -174,6 +268,7 @@
 
   const updateSettings = (changes = {}) => {
     const speechChanges = changes?.speechConfig ?? {};
+    const reminderChanges = changes?.reminder ?? {};
     const personaProvided = Object.prototype.hasOwnProperty.call(changes, "persona");
     const voiceProvided = Object.prototype.hasOwnProperty.call(speechChanges, "voiceName");
     const languageProvided = Object.prototype.hasOwnProperty.call(speechChanges, "languageCode");
@@ -229,7 +324,26 @@
       ...currentSettings,
       ...changes,
       persona: normalizedPersona,
-      speechConfig: mergedSpeech
+      speechConfig: mergedSpeech,
+      reminder: {
+        ...DEFAULT_SETTINGS.reminder,
+        ...(currentSettings.reminder ?? {}),
+        ...reminderChanges,
+        required: {
+          ...DEFAULT_SETTINGS.reminder.required,
+          ...(currentSettings.reminder?.required ?? {}),
+          ...(reminderChanges.required ?? {})
+        },
+        lead: {
+          ...DEFAULT_SETTINGS.reminder.lead,
+          ...(currentSettings.reminder?.lead ?? {}),
+          ...(reminderChanges.lead ?? {})
+        },
+        confirm:
+          typeof reminderChanges.confirm === "boolean"
+            ? reminderChanges.confirm
+            : (currentSettings.reminder?.confirm ?? DEFAULT_SETTINGS.reminder.confirm)
+      }
     };
 
     persist(next);
@@ -252,7 +366,10 @@
     getPersonaForVoice: resolvePersonaByVoice,
     subscribeSettings: subscribe,
     fetchJson: apiFetch,
-    formatTimestamp: formatTime
+    formatTimestamp: formatTime,
+    getActiveRole: getStoredRole,
+    setActiveRole: persistRoleValue,
+    normalizeRole: normalizeRoleValue
   };
 
   document.addEventListener("DOMContentLoaded", () => {

@@ -24,7 +24,7 @@
       '  <div><label>日期</label><input id="rmDate" type="date" style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px"/></div>',
       '  <div><label>時間</label><input id="rmTime" type="time" style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px"/></div>',
       '  <div><label>提醒時間(可選)</label><input id="rmRemind" type="time" style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px"/></div>',
-      '  <div><label>類別</label><select id="rmCat" style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px"><option value="">未分類</option><option value="medicine">用藥</option><option value="exercise">運動</option><option value="appointment">就醫</option><option value="chat">聊天</option></select></div>',
+      '  <div><label>類別</label><select id="rmCat" style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px"><option value="">未分類</option><option value="medicine">用藥</option><option value="exercise">運動</option><option value="appointment">就醫</option><option value="chat">聊天</option><option value="other">其他</option></select></div>',
       '  <div style="grid-column:1/-1"><label>說明(可選)</label><input id="rmDesc" type="text" style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px"/></div>',
       '</div>',
       '<div style="display:flex;gap:8px;justify-content:flex-end">',

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>智護生活：AI 伴你</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <!-- CSS -->
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin>
@@ -156,10 +157,34 @@
   </div>
 
   <!-- JS 順序：先基礎，再功能模組 -->
+  <script>
+    // Reorder cards: Chat -> top-left, Today -> top-right, Safety map -> next row left
+    (function(){
+      try {
+        const grids = document.querySelectorAll('.grid.two');
+        if (grids.length >= 2) {
+          const first = grids[0];
+          const second = grids[1];
+          const todayCard = first.querySelector('#today-list')?.closest('article');
+          const safetyCard = first.querySelector('#safety-card');
+          const chatCard = second.querySelector('[data-ai-chat]')?.closest('article');
+          const secondArticles = Array.from(second.querySelectorAll('article'));
+          const socialCard = secondArticles.find(a => !a.contains(second.querySelector('[data-ai-chat]')));
+          if (first && second && todayCard && safetyCard && chatCard && socialCard) {
+            first.insertBefore(chatCard, first.firstChild);
+            if (todayCard !== first.lastElementChild) first.appendChild(todayCard);
+            second.insertBefore(safetyCard, second.firstChild);
+            if (socialCard !== second.lastElementChild) second.appendChild(socialCard);
+          }
+        }
+      } catch(_) {}
+    })();
+  </script>
   <script src="assets/js/app.js"></script>
   <script src="assets/js/settings.js"></script>
   <script src="assets/js/chat.js"></script>
   <script src="assets/js/reminders.js"></script>
+  <script src="assets/js/reminder-policies.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
 
   <!-- 安全地圖模組 -->
@@ -237,6 +262,39 @@
     (function initToday(){
       const TAIPEI_TZ = 'Asia/Taipei'
       function todayRangeInTaipei(){ const now = new Date(); const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: TAIPEI_TZ, year:'numeric', month:'2-digit', day:'2-digit' }).format(now); const start = new Date(`${ymd}T00:00:00+08:00`); const end = new Date(start.getTime() + 24*60*60*1000); return { from: start.toISOString(), to: end.toISOString(), ymd } }
+
+      // Improved renderer: includes location, and provides 完成/刪除按鈕
+      async function renderTodayV2(){
+        const listEl = document.getElementById('today-list');
+        if (!listEl) return;
+        const range = todayRangeInTaipei();
+        const qs = new URLSearchParams({ from: range.from, to: range.to }).toString();
+        try {
+          const data = await window.aiCompanion.fetchJson(`/events?${qs}`);
+          const events = Array.isArray(data?.events) ? data.events : [];
+          if (!events.length) { listEl.innerHTML = '<li><span>今天尚無提醒</span></li>'; return }
+          listEl.innerHTML = '';
+          for (const ev of events) {
+            const li = document.createElement('li');
+            const t = new Date(ev.start_time);
+            const hh = String(t.getHours()).padStart(2,'0');
+            const mm = String(t.getMinutes()).padStart(2,'0');
+            const time = `${hh}:${mm}`;
+            const loc = ev.location ? ` ＠ ${String(ev.location)}` : '';
+            li.innerHTML = `<strong>${time}</strong><span>${(ev.title||'').toString()}${loc}</span><span style="margin-left:auto"></span><button class="btn secondary" data-done>完成</button><button class="btn secondary" data-del>刪除</button>`;
+            li.title = ev.description || '';
+            li.style.cursor='pointer';
+            li.addEventListener('click', async ()=>{ try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'PATCH', body: JSON.stringify({ status: !ev.status }) }); ev.status=!ev.status; li.style.opacity = ev.status ? '0.55' : '1' } catch {} });
+            li.querySelector('[data-done]').addEventListener('click', async (e)=>{ e.stopPropagation(); try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'PATCH', body: JSON.stringify({ status: true }) }); li.remove() } catch { alert('標記完成失敗，稍後再試') } });
+            li.querySelector('[data-del]').addEventListener('click', async (e)=>{ e.stopPropagation(); if (!confirm('確定刪除此提醒？')) return; try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'DELETE' }); li.remove() } catch { alert('刪除失敗，稍後再試') } });
+            if (ev.status) li.style.opacity='0.55';
+            listEl.appendChild(li)
+          }
+        } catch (error) {
+          listEl.innerHTML = '<li><span>載入提醒失敗，稍後再試</span></li>';
+          console.warn('[today events] load failed', error)
+        }
+      }
       async function renderToday(){ const listEl = document.getElementById('today-list'); if (!listEl) return; const range = todayRangeInTaipei(); const qs = new URLSearchParams({ from: range.from, to: range.to }).toString(); try { const data = await window.aiCompanion.fetchJson(`/events?${qs}`); const events = Array.isArray(data?.events) ? data.events : []; if (!events.length) { listEl.innerHTML = '<li><span>今天尚無提醒</span></li>'; return } listEl.innerHTML = ''; for (const ev of events) { const li = document.createElement('li'); const t = new Date(ev.start_time); const hh = String(t.getHours()).padStart(2,'0'); const mm = String(t.getMinutes()).padStart(2,'0'); const time = `${hh}:${mm}`; li.innerHTML = `<strong>${time}</strong><span>${(ev.title||'').toString()}</span><button class="btn secondary" data-del style="margin-left:auto">刪除</button>`; li.title = ev.description || ''; li.style.cursor='pointer'; li.addEventListener('click', async ()=>{ try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'PATCH', body: JSON.stringify({ status: !ev.status }) }); ev.status=!ev.status; li.style.opacity = ev.status ? '0.55' : '1' } catch {} }); li.querySelector('[data-del]').addEventListener('click', async (e)=>{ e.stopPropagation(); if (!confirm('確定刪除此提醒？')) return; try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'DELETE' }); li.remove() } catch { alert('刪除失敗，稍後再試') } }); if (ev.status) li.style.opacity='0.55'; listEl.appendChild(li) } } catch (error) { listEl.innerHTML = '<li><span>載入提醒失敗，稍後再試</span></li>'; console.warn('[today events] load failed', error) } }
       function scheduleNotifications(events){ if (!('Notification' in window)) return; if (Notification.permission !== 'granted') { Notification.requestPermission().catch(()=>{}) } const now = Date.now(); for (const ev of events) { const target = ev.reminder_time || ev.start_time; if (!target) continue; const at = Date.parse(target), delay = at - now; if (Number.isFinite(delay) && delay > 0 && delay <= 24*60*60*1000) { setTimeout(()=>{ try { if (Notification.permission==='granted') new Notification(ev.title || '提醒', { body: ev.description || '時間到了', silent: false }) } catch {} }, delay) } } }
       async function loadAndScheduleToday(){ const range = todayRangeInTaipei(); const qs = new URLSearchParams({ from: range.from, to: range.to }).toString(); try { const data = await window.aiCompanion.fetchJson(`/events?${qs}`); const events = Array.isArray(data?.events) ? data.events : []; scheduleNotifications(events) } catch {} }
@@ -296,14 +354,14 @@
             })
             form.reset()
             form.style.display = 'none'
-            await renderToday()
+            await renderTodayV2()
             await loadAndScheduleToday()
           } catch {
             alert('新增失敗，稍後再試')
           }
         })
       }
-      renderToday(); loadAndScheduleToday(); bindAddForm()
+      renderTodayV2(); loadAndScheduleToday(); bindAddForm()
     })()
   </script>
 </body>

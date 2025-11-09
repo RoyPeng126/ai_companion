@@ -1669,3 +1669,14 @@ body{
 #today-list .btn.secondary[data-del]:hover {
   filter: brightness(0.95);
 }
+
+#today-list .btn.secondary[data-done] {
+  background: var(--success);
+  color: #fff;
+  border: none;
+  margin-right: 8px;
+}
+
+#today-list .btn.secondary[data-done]:hover {
+  filter: brightness(0.95);
+}

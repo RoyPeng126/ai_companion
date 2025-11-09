@@ -1,0 +1,6 @@
+{
+  "appName": "AI Companion Devtools",
+  "environment": "development",
+  "status": "disabled",
+  "message": "Chrome DevTools requested this placeholder. No remote debugging bundle is exposed in local builds."
+}

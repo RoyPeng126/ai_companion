@@ -38,15 +38,15 @@
     <main>
       <section class="hero" aria-label="快速設定引導">
         <div>
-          <p class="status-pill">5 分鐘完成基本設定</p>
-          <h2>語音提醒、健康任務、緊急聯絡人一次搞定</h2>
-          <p>依照情境自動推薦設定項目，長者僅需回答簡單問題即可完成。</p>
+          <p class="status-pill">3 分鐘完成設定</p>
+          <h2>語音、提醒、安全一次設定</h2>
+          <p>照著問題回答，幾分鐘就能完成。</p>
         </div>
       </section>
 
-      <section class="card" aria-labelledby="home-location-title">
+      <section class="card" id="home-location-card" aria-labelledby="home-location-title">
         <h2 id="home-location-title">住家位置設定</h2>
-        <p class="helper-text">依序選擇縣市、鄉鎮市區並輸入路名或巷弄，查詢後拖曳紅色圖釘或點擊地圖微調，最後定位在住家大樓門口再儲存。</p>
+        <p class="helper-text">先選縣市與鄉鎮，再輸入路名，拖曳紅點到住家門口即可。</p>
         <div class="map-form">
           <div>
             <label for="homeCountySelect">縣市</label>
@@ -82,7 +82,7 @@
       <section class="card" aria-labelledby="voice-settings-title">
         <h2 id="voice-settings-title">語音合成設定</h2>
         <p class="helper-text">
-          選擇 AI 奶奶回覆時使用的語音，所有語音皆由 Yating 提供。
+          選喜歡的 AI 奶奶聲音，聽起來順耳就好。
         </p>
         <div class="chat-preferences">
           <div class="chat-preferences__row chat-preferences__row--language">
@@ -94,7 +94,7 @@
           </div>
         </div>
         <div class="voice-presets" data-voice-options role="radiogroup" aria-labelledby="voice-settings-title"></div>
-        <p class="helper-text">隨時可以在此頁面調整喜歡的聲音風格。</p>
+        <p class="helper-text">之後想換聲音，再回來調整即可。</p>
       </section>
 
       <section class="card" aria-labelledby="setup-form-title">
@@ -112,7 +112,7 @@
           <div>
             <label for="check-in-time">每日關懷時間</label>
             <input id="check-in-time" name="check-in-time" type="time" value="09:00">
-            <p class="helper-text">系統會在此時間詢問心情並同步給家人。</p>
+            <p class="helper-text">系統會在此時間問候並通知家人。</p>
           </div>
 
           <div>
@@ -163,6 +163,7 @@
       TAIWAN_REGIONS
     } from './assets/js/safety-map.js'
 
+    function initHomeLocationCard () {
     const feedbackEl = document.getElementById('homeFeedback')
     const storedInfoEl = document.getElementById('homeStoredInfo')
     const searchBtn = document.getElementById('homeSearchBtn')
@@ -442,10 +443,60 @@
     })
     searchBtn.addEventListener('click', handleSearch)
     saveBtn.addEventListener('click', handleSave)
+    }
+
+    function hideHomeLocationCard () {
+      const card = document.getElementById('home-location-card')
+      if (card) {
+        card.hidden = true
+        card.setAttribute('aria-hidden', 'true')
+      }
+    }
+
+    const activeRole = window.aiCompanion?.getActiveRole?.() || ''
+    const normalizedRole = window.aiCompanion?.normalizeRole?.(activeRole) || activeRole || ''
+    const elderRoles = ['elder', 'senior', 'grandpa', 'grandma']
+    const isElderRole = elderRoles.includes(normalizedRole.toLowerCase())
+
+    if (isElderRole) {
+      hideHomeLocationCard()
+    } else {
+      initHomeLocationCard()
+    }
   </script>
   <script>
     (function initAccountSettings(){
       const API_BASE = (localStorage.getItem('AI_COMPANION_API_BASE') || 'http://localhost:3001').replace(/\/$/, '')
+      const ELDER_MATCH = ['elder', 'senior', 'grandpa', 'grandma']
+
+      const resolveActiveRole = () => {
+        const raw = window.aiCompanion?.getActiveRole?.() || ''
+        const normalized = window.aiCompanion?.normalizeRole?.(raw) || raw || ''
+        return normalized.toLowerCase()
+      }
+
+      const isElderLocked = () => ELDER_MATCH.includes(resolveActiveRole())
+
+      function insertElderNotice () {
+        const existing = document.getElementById('elder-lock-card')
+        if (existing) return existing
+        const main = document.querySelector('main')
+        if (!main) return null
+        const notice = document.createElement('section')
+        notice.className = 'card'
+        notice.id = 'elder-lock-card'
+        notice.innerHTML = `
+          <h2>由家屬協助管理</h2>
+          <p class="helper-text">此頁面的住家位置與帳號資訊僅供家屬或照護者調整。如需更新，請與家屬聯繫。</p>
+        `
+        const anchor = document.getElementById('voice-settings-title')?.closest('section')
+        if (anchor) {
+          main.insertBefore(notice, anchor)
+        } else {
+          main.appendChild(notice)
+        }
+        return notice
+      }
 
       async function fetchMe() {
         try {
@@ -503,9 +554,19 @@
       }
 
       async function bootstrap() {
-        ensureForms()
+        const locked = isElderLocked()
+        if (locked) {
+          insertElderNotice()
+          const homeCard = document.getElementById('home-location-card')
+          if (homeCard) {
+            homeCard.hidden = true
+            homeCard.setAttribute('aria-hidden', 'true')
+          }
+        } else {
+          ensureForms()
+        }
         const user = await fetchMe()
-        if (!user) return
+        if (!user || locked) return
         // Fill profile fields
         const byId = (id) => document.getElementById(id)
         if (byId('full_name')) byId('full_name').value = user.full_name || ''

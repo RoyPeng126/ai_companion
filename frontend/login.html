@@ -67,6 +67,61 @@
       const API_BASE = (localStorage.getItem('AI_COMPANION_API_BASE') || 'http://localhost:3001').replace(/\/$/, '')
       const form = document.getElementById('loginForm')
       const errorEl = document.getElementById('login-error')
+      const roleSelect = document.getElementById('role')
+      const ROLE_STORAGE_KEY = 'ai-companion-active-role'
+      const REGISTER_KEY = 'ai-companion-register-role'
+
+      const normalizeRole = (value) => {
+        const text = typeof value === 'string' ? value.trim().toLowerCase() : ''
+        if (!text) return ''
+        if (text === 'senior' || text === 'elder' || text === 'grandpa' || text === 'grandma') return 'elder'
+        if (text === 'family') return 'family'
+        if (text === 'social-worker' || text === 'caregiver') return 'caregiver'
+        return text
+      }
+
+      const persistRole = (value) => {
+        const normalized = normalizeRole(value)
+        try {
+          if (normalized) {
+            sessionStorage.setItem(ROLE_STORAGE_KEY, normalized)
+          } else {
+            sessionStorage.removeItem(ROLE_STORAGE_KEY)
+          }
+        } catch (_) {}
+        try {
+          if (normalized) {
+            localStorage.setItem(ROLE_STORAGE_KEY, normalized)
+          } else {
+            localStorage.removeItem(ROLE_STORAGE_KEY)
+          }
+        } catch (_) {}
+        return normalized
+      }
+
+      const restoreRole = () => {
+        const sources = [
+          () => sessionStorage.getItem(ROLE_STORAGE_KEY),
+          () => localStorage.getItem(ROLE_STORAGE_KEY),
+          () => sessionStorage.getItem(REGISTER_KEY)
+        ]
+        for (const read of sources) {
+          try {
+            const value = read()
+            if (value) return normalizeRole(value)
+          } catch (_) {}
+        }
+        return ''
+      }
+
+      const presetRole = restoreRole()
+      if (presetRole && roleSelect) {
+        const option = roleSelect.querySelector(`option[value="${presetRole}"]`)
+        if (option) roleSelect.value = presetRole
+      }
+      roleSelect?.addEventListener('change', (event) => {
+        persistRole(event.target.value)
+      })
 
       function showParamError() {
         const p = new URLSearchParams(location.search)
@@ -86,12 +141,13 @@
         e.preventDefault()
         if (errorEl) errorEl.style.display = 'none'
         const data = Object.fromEntries(new FormData(form).entries())
+        const normalizedRole = persistRole(data.role)
         try {
           const res = await fetch(`${API_BASE}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ email: data.email, password: data.password })
+            body: JSON.stringify({ email: data.email, password: data.password, role: normalizedRole || data.role })
           })
           if (res.ok) {
             location.href = 'index.html'
