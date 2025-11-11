@@ -34,8 +34,13 @@ export const generateChatResponse = async ({
     requestOptions
   )
 
+  const normalizeRole = (role) => {
+    if (role === 'model') return 'model'
+    return 'user'
+  }
+
   const fullHistory = context.map(item => ({
-    role: item.role,
+    role: normalizeRole(item.role),
     parts: [{ text: item.text }]
   }))
 
@@ -79,7 +84,6 @@ export const generateChatResponse = async ({
   const tryGenerate = async (history, maxOutputTokens) => {
     const requestPayload = {
       systemInstruction: {
-        role: 'system',
         parts: [{ text: personaPrompt }]
       },
       contents: [

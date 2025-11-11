@@ -1680,3 +1680,233 @@ body{
 #today-list .btn.secondary[data-done]:hover {
   filter: brightness(0.95);
 }
+
+.today-add-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.today-add-form {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid rgba(230, 57, 70, 0.2);
+  border-radius: 12px;
+  background: #fffdfd;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.today-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.today-form-group input,
+.today-form-group select,
+.today-form-group textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  font: inherit;
+}
+
+.today-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.today-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.facebook-feed-card .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.facebook-feed__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.facebook-feed__item {
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.facebook-feed__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.92rem;
+  color: #4b5563;
+  gap: 12px;
+}
+
+.facebook-feed__meta-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.facebook-feed__source {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  background: var(--primary);
+  color: #fff;
+}
+
+.facebook-feed__source[data-source="manual_share"] {
+  background: var(--accent);
+  color: #5a2d2d;
+}
+
+.facebook-feed__source[data-source="facebook_page"] {
+  background: #1d4ed8;
+}
+
+.facebook-feed__text {
+  margin: 0;
+  color: #1f2937;
+  line-height: 1.45;
+}
+
+.facebook-feed__link {
+  align-self: flex-start;
+  font-size: 0.9rem;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.facebook-feed__link:hover,
+.facebook-feed__link:focus-visible {
+  text-decoration: underline;
+}
+
+.family-steps {
+  list-style: none;
+  margin: 16px 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.family-steps li {
+  padding: 12px;
+  border: 1px dashed rgba(230, 57, 70, 0.35);
+  border-radius: 12px;
+  background: #fff9f9;
+}
+
+.family-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  align-items: flex-end;
+  margin-top: 12px;
+}
+
+.family-actions__connect {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.family-actions__input {
+  display: flex;
+  gap: 8px;
+}
+
+.family-actions__input input {
+  flex: 1;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  padding: 8px 10px;
+}
+
+.status-pill--ok {
+  background: rgba(56, 176, 0, 0.15);
+  color: #1f5f00;
+}
+
+.status-pill--warn {
+  background: rgba(255, 159, 28, 0.2);
+  color: #7a3d00;
+}
+
+.family-share {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.family-share form {
+  display: grid;
+  gap: 12px;
+}
+
+.family-share form input,
+.family-share form textarea {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.family-share__list ul,
+#shareList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#shareList li {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.family-share__empty {
+  color: var(--muted);
+}
+
+.facebook-feed__empty {
+  padding: 12px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+#facebook-feed-status[data-state="error"] {
+  color: #dc2626;
+}

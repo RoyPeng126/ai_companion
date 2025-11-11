@@ -77,6 +77,47 @@
         <article class="card">
           <h3>今日重點提醒</h3>
           <ul class="list" id="today-list"></ul>
+          <div class="today-add-controls">
+            <button class="btn secondary" type="button" id="addEventBtn">新增提醒</button>
+          </div>
+          <form id="addEventForm" class="today-add-form" style="display: none;">
+            <div class="today-form-group">
+              <label for="evtTitle">提醒主題</label>
+              <input type="text" id="evtTitle" placeholder="例如：下午散步" required>
+            </div>
+            <div class="today-form-group">
+              <label for="evtCategory">提醒類別</label>
+              <select id="evtCategory">
+                <option value="">選擇類別（可選）</option>
+                <option value="health">健康照護</option>
+                <option value="family">家庭互動</option>
+                <option value="social">社交活動</option>
+                <option value="life">生活日程</option>
+              </select>
+            </div>
+            <div class="today-form-group">
+              <label for="evtDesc">提醒說明</label>
+              <textarea id="evtDesc" rows="2" placeholder="補充說明（可選）"></textarea>
+            </div>
+            <div class="today-form-grid">
+              <div class="today-form-group">
+                <label for="evtDate">日期</label>
+                <input type="date" id="evtDate" required>
+              </div>
+              <div class="today-form-group">
+                <label for="evtTime">時間</label>
+                <input type="time" id="evtTime" required>
+              </div>
+              <div class="today-form-group">
+                <label for="evtRemind">提醒時間</label>
+                <input type="time" id="evtRemind">
+              </div>
+            </div>
+            <div class="today-form-actions">
+              <button class="btn secondary" type="button" id="cancelAdd">取消</button>
+              <button class="btn primary" type="submit">儲存提醒</button>
+            </div>
+          </form>
           <p class="helper-text">提醒來源可由長者語音新增或家屬遠端同步。</p>
         </article>
 
@@ -148,6 +189,16 @@
           <p>每週五晚上 8 點與家人視訊、每週日分享散步照片，AI 奶奶會提醒並給予鼓勵。</p>
           <a class="btn secondary" href="forum.html">前往社群公園</a>
         </article>
+        <article class="card facebook-feed-card" data-facebook-feed>
+          <div class="card-header">
+            <h3>親友最新動態</h3>
+            <button class="btn secondary" type="button" data-facebook-refresh aria-label="重新整理 Facebook 貼文">重新整理</button>
+          </div>
+          <ul class="list facebook-feed__list" id="facebook-feed-list">
+            <li class="facebook-feed__empty"><span>貼文載入中...</span></li>
+          </ul>
+          <p class="helper-text" id="facebook-feed-status">僅顯示主動授權的家人、粉絲專頁與手動分享內容，安全又合規。</p>
+        </article>
       </section>
     </main>
 
@@ -181,6 +232,7 @@
     })();
   </script>
   <script src="assets/js/app.js"></script>
+  <script src="assets/js/facebook-feed.js"></script>
   <script src="assets/js/settings.js"></script>
   <script src="assets/js/chat.js"></script>
   <script src="assets/js/reminders.js"></script>
@@ -246,7 +298,43 @@
       const API_BASE = (localStorage.getItem('AI_COMPANION_API_BASE') || 'http://localhost:3001').replace(/\/$/, '')
       const btn = document.getElementById('avatarBtn'), dd = document.getElementById('userDropdown'), initialsEl = document.getElementById('avatarInitials'), avatarImg = document.getElementById('avatarImage'), nameEl = document.getElementById('umName'), emailEl = document.getElementById('umEmail'), logoutBtn = document.getElementById('umLogout')
       function toInitials(name){ if(!name) return 'U'; const parts=String(name).trim().split(/\s+/); return parts.length===1?parts[0].slice(0,2).toUpperCase():(parts[0][0]+parts[1][0]).toUpperCase() }
-      async function loadUser(){ try { const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' }); if(!res.ok) return; const json = await res.json(); const user = json.user || {}; const display = user.full_name || user.username || user.email || '使用者'; const avatarUrl = user.avatar_url || user.avatar; if(nameEl) nameEl.textContent = display; if(emailEl) emailEl.textContent = user.email || ''; if(initialsEl) initialsEl.textContent = toInitials(display); if(avatarImg){ if(avatarUrl){ avatarImg.src=avatarUrl; avatarImg.alt=`${display} 的頭像`; avatarImg.hidden=false; if(initialsEl) initialsEl.hidden=true } else { avatarImg.removeAttribute('src'); avatarImg.hidden=true; if(initialsEl) initialsEl.hidden=false } } } catch {} }
+      let announced = false
+      function announceUser(user){
+        if (!user || announced) return
+        announced = true
+        if (window.aiCompanion) {
+          window.aiCompanion.currentUser = user
+        }
+        try {
+          window.dispatchEvent(new CustomEvent('ai-companion:user-ready', { detail: user }))
+        } catch (_) {}
+      }
+      async function loadUser(){
+        try {
+          const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
+          if(!res.ok) return
+          const json = await res.json()
+          const user = json.user || {}
+          const display = user.full_name || user.username || user.email || '使用者'
+          const avatarUrl = user.avatar_url || user.avatar
+          if(nameEl) nameEl.textContent = display
+          if(emailEl) emailEl.textContent = user.email || ''
+          if(initialsEl) initialsEl.textContent = toInitials(display)
+          if(avatarImg){
+            if(avatarUrl){
+              avatarImg.src=avatarUrl
+              avatarImg.alt=`${display} 的頭像`
+              avatarImg.hidden=false
+              if(initialsEl) initialsEl.hidden=true
+            } else {
+              avatarImg.removeAttribute('src')
+              avatarImg.hidden=true
+              if(initialsEl) initialsEl.hidden=false
+            }
+          }
+          announceUser(user)
+        } catch {}
+      }
       function openMenu(){ dd.hidden=false; btn.setAttribute('aria-expanded','true'); document.addEventListener('click', onDocClick); document.addEventListener('keydown', onEsc) }
       function closeMenu(){ dd.hidden=true; btn.setAttribute('aria-expanded','false'); document.removeEventListener('click', onDocClick); document.removeEventListener('keydown', onEsc) }
       function onDocClick(e){ if(!dd.contains(e.target) && !btn.contains(e.target)) closeMenu() }

@@ -335,13 +335,73 @@
     return null;
   };
 
+  const LINK_REGEX = /(https?:\/\/[^\s]+)/g;
+  const LABEL_REGEX = /(連結\d+)(：?)(\s*)$/;
+
+  const appendTextNode = (target, text) => {
+    if (!text) return;
+    target.appendChild(document.createTextNode(text));
+  };
+
+  const createLinkElement = (url, label) => {
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    anchor.textContent = label || url;
+    return anchor;
+  };
+
+  const appendLinkifiedLine = (target, line) => {
+    let lastIndex = 0;
+    let match;
+    while ((match = LINK_REGEX.exec(line)) !== null) {
+      const before = line.slice(lastIndex, match.index);
+      const labelMatch = LABEL_REGEX.exec(before);
+
+      if (labelMatch) {
+        const keepText = before.slice(0, before.length - labelMatch[0].length);
+        appendTextNode(target, keepText);
+        const anchor = createLinkElement(match[0], labelMatch[1]);
+        target.appendChild(anchor);
+        if (labelMatch[2]) appendTextNode(target, labelMatch[2]);
+        if (labelMatch[3]) appendTextNode(target, labelMatch[3]);
+      } else {
+        appendTextNode(target, before);
+        const anchor = createLinkElement(match[0]);
+        target.appendChild(anchor);
+      }
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    const remaining = line.slice(lastIndex);
+    appendTextNode(target, remaining);
+  };
+
+  const renderAiMessage = (bubble, text) => {
+    const safeText = String(text ?? "");
+    const lines = safeText.split(/\n/);
+    lines.forEach((line, index) => {
+      if (index > 0) {
+        bubble.appendChild(document.createElement("br"));
+      }
+      appendLinkifiedLine(bubble, line);
+    });
+  };
+
   const createMessage = (role, text) => {
     const row = document.createElement("div");
     row.className = `message-row message-row--${role}`;
 
     const bubble = document.createElement("div");
     bubble.className = `message ${role}`;
-    bubble.textContent = text;
+
+    if (role === "ai") {
+      renderAiMessage(bubble, text);
+    } else {
+      bubble.textContent = text;
+    }
 
     if (role === "ai") {
       const avatarUrl = getAvatarForRole(role);
@@ -699,6 +759,20 @@
       context: conversation.map(({ role, text: ctxText }) => ({ role, text: ctxText })),
       speechConfig
     };
+
+    const fbFeed = window.aiCompanion.facebookFeed;
+    if (fbFeed?.getPosts) {
+      const latestPosts = (fbFeed.getPosts() || []).slice(0, 5);
+      if (latestPosts.length) {
+        payload.facebookPosts = latestPosts.map((post) => ({
+          id: post.id,
+          author: post.author,
+          text: post.text,
+          permalink: post.permalink,
+          createdTime: post.createdTime
+        }));
+      }
+    }
 
     if (text) {
       payload.message = text;

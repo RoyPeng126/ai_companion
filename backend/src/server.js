@@ -10,6 +10,8 @@ import usersRouter from './routes/users.js'
 import rankingRouter from './routes/ranking.js'
 import geofenceRouter from './routes/geofence.js'
 import eventsRouter from './routes/events.js'
+import facebookRouter from './routes/facebook.js'
+import familyFeedRouter from './routes/familyFeed.js'
 
 const app = express()
 const defaultOrigins = [
@@ -38,6 +40,8 @@ app.use('/api/users', usersRouter)
 app.use('/api/ranking', rankingRouter)
 app.use('/api/geofence', geofenceRouter)
 app.use('/api/events', eventsRouter)
+app.use('/api/facebook', facebookRouter)
+app.use('/api/family-feed', familyFeedRouter)
 
 app.use((err, req, res, next) => {
   console.error(err)

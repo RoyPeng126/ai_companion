@@ -165,7 +165,10 @@ router.get('/me', async (req, res, next) => {
     }
 
     const result = await pool.query(
-      'SELECT user_id, email, username, full_name FROM users WHERE user_id = $1 LIMIT 1',
+      `SELECT user_id, email, username, full_name, owner_user_id, relation, charactor
+       FROM users
+       WHERE user_id = $1
+       LIMIT 1`,
       [payload.uid]
     )
     if (result.rowCount === 0) {

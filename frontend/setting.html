@@ -79,6 +79,59 @@
         <div id="home-map" aria-label="住家位置預覽"></div>
       </section>
 
+      <section class="card" id="family-setup-card" aria-labelledby="family-setup-title">
+        <h2 id="family-setup-title">家庭分享與 Facebook 授權</h2>
+        <p class="helper-text">邀請家人完成授權後，親友貼文與聊天室才能讀到他們的近況。</p>
+
+        <ol class="family-steps">
+          <li>
+            <strong>1. 家人登入系統</strong>
+            <p>請家人以「家屬」角色登入此系統（需要帳號密碼）。</p>
+          </li>
+          <li>
+            <strong>2. 點選「連結 Facebook」</strong>
+            <p>按下下方按鈕後會跳至 Facebook，請當事人親自確認權限。</p>
+          </li>
+          <li>
+            <strong>3. 分享想給長輩看的內容</strong>
+            <p>授權完成後即可同步貼文，或使用以下表單暫存連結。</p>
+          </li>
+        </ol>
+
+        <div class="family-actions">
+          <div class="family-actions__connect">
+            <button class="btn primary" type="button" data-facebook-connect>連結 Facebook</button>
+            <p class="helper-text">需由家屬帳號登入後操作，按下後會導向 Facebook 確認畫面。</p>
+          </div>
+          <div class="family-actions__status">
+            <span class="status-pill" id="fbStatusPill">檢查中…</span>
+            <p class="helper-text" id="fbStatusText">正在檢查 Facebook 授權狀態。</p>
+          </div>
+        </div>
+
+        <div class="family-share">
+          <h3>手動分享連結（暫存）</h3>
+          <p class="helper-text">此功能先暫存在本機，之後可同步到後端 `family_feed_shares`。</p>
+          <form id="familyShareForm">
+            <label for="shareName">分享人姓名</label>
+            <input type="text" id="shareName" placeholder="例如：佩真阿姨" required>
+
+            <label for="shareSummary">想分享的話</label>
+            <textarea id="shareSummary" rows="2" maxlength="120" placeholder="簡述內容，120 字內" required></textarea>
+
+            <label for="shareLink">連結</label>
+            <input type="url" id="shareLink" placeholder="https://..." required>
+
+            <button class="btn primary" type="submit">新增到待送清單</button>
+          </form>
+
+          <div class="family-share__list">
+            <h4>待送出的分享</h4>
+            <ul id="shareList"></ul>
+          </div>
+        </div>
+      </section>
+
       <section class="card" aria-labelledby="voice-settings-title">
         <h2 id="voice-settings-title">語音合成設定</h2>
         <p class="helper-text">
@@ -162,6 +215,10 @@
       saveHome,
       TAIWAN_REGIONS
     } from './assets/js/safety-map.js'
+
+    const STORAGE_KEYS = {
+      FAMILY_SHARES: 'ai-companion.pendingFamilyShares'
+    }
 
     function initHomeLocationCard () {
     const feedbackEl = document.getElementById('homeFeedback')
@@ -463,6 +520,153 @@
     } else {
       initHomeLocationCard()
     }
+
+    function initFamilyCard () {
+      const card = document.getElementById('family-setup-card')
+      if (!card) return
+
+      const shareForm = document.getElementById('familyShareForm')
+      const shareList = document.getElementById('shareList')
+      const statusPill = document.getElementById('fbStatusPill')
+      const statusText = document.getElementById('fbStatusText')
+      const connectBtn = document.querySelector('[data-facebook-connect]')
+
+      const readShares = () => {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEYS.FAMILY_SHARES)
+          const list = raw ? JSON.parse(raw) : []
+          return Array.isArray(list) ? list : []
+        } catch {
+          return []
+        }
+      }
+
+      const persistShares = (items) => {
+        localStorage.setItem(STORAGE_KEYS.FAMILY_SHARES, JSON.stringify(items))
+        renderShares()
+      }
+
+      const renderShares = () => {
+        if (!shareList) return
+        const items = readShares()
+        shareList.innerHTML = ''
+        if (!items.length) {
+          const li = document.createElement('li')
+          li.className = 'family-share__empty'
+          li.textContent = '目前尚無待送出的分享。'
+          shareList.appendChild(li)
+          return
+        }
+        items.forEach(item => {
+          const li = document.createElement('li')
+          li.innerHTML = `
+            <strong>${item.name}</strong>
+            <p>${item.summary}</p>
+            <a href="${item.link}" target="_blank" rel="noopener">${item.link}</a>
+            <button type="button" class="link-button" data-remove="${item.id}">移除</button>
+          `
+          shareList.appendChild(li)
+        })
+      }
+
+      shareList?.addEventListener('click', (event) => {
+        const target = event.target.closest('[data-remove]')
+        if (!target) return
+        const id = target.getAttribute('data-remove')
+        const next = readShares().filter(item => item.id !== id)
+        persistShares(next)
+      })
+
+      shareForm?.addEventListener('submit', (event) => {
+        event.preventDefault()
+        const name = document.getElementById('shareName')?.value.trim()
+        const summary = document.getElementById('shareSummary')?.value.trim()
+        const link = document.getElementById('shareLink')?.value.trim()
+        if (!name || !summary || !link) {
+          alert('請完整填寫分享資訊')
+          return
+        }
+        const payload = { id: `${Date.now()}`, name, summary, link }
+        const list = readShares()
+        list.unshift(payload)
+        persistShares(list)
+        shareForm.reset()
+      })
+
+      renderShares()
+
+      async function checkFacebookStatus () {
+        if (!window.aiCompanion?.fetchJson || !statusPill || !statusText) return
+        try {
+          const data = await window.aiCompanion.fetchJson('/facebook/posts?limit=1')
+          if (data?.disabled) {
+            statusPill.textContent = '尚未授權'
+            statusPill.classList.remove('status-pill--ok')
+            statusPill.classList.add('status-pill--warn')
+            statusText.textContent = '尚未邀請任何家人授權，請先送出邀請。'
+          } else {
+            statusPill.textContent = '授權正常'
+            statusPill.classList.remove('status-pill--warn')
+            statusPill.classList.add('status-pill--ok')
+            statusText.textContent = '已偵測到家人授權，會自動同步貼文。'
+          }
+        } catch (error) {
+          statusPill.textContent = '檢查失敗'
+          statusPill.classList.remove('status-pill--ok')
+          statusPill.classList.add('status-pill--warn')
+          statusText.textContent = '無法檢查授權狀態，請稍後再試。'
+          console.warn('[settings] fetch facebook status failed', error)
+        }
+      }
+
+      checkFacebookStatus()
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initFamilyCard()
+    })
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const connectBtn = document.querySelector('[data-facebook-connect]')
+      if (connectBtn) {
+        connectBtn.addEventListener('click', async () => {
+          if (!window.aiCompanion?.fetchJson) return
+          connectBtn.disabled = true
+          connectBtn.textContent = '前往 Facebook 中…'
+          try {
+            const data = await window.aiCompanion.fetchJson('/facebook/auth/url')
+            if (data?.url) {
+              window.location.href = data.url
+            } else {
+              throw new Error('missing_url')
+            }
+          } catch (error) {
+            console.warn('[settings] 無法取得 Facebook OAuth URL', error)
+            alert('無法啟動 Facebook 授權，請稍後重試。')
+            connectBtn.disabled = false
+            connectBtn.textContent = '連結 Facebook'
+          }
+        })
+      }
+
+      const params = new URLSearchParams(window.location.search)
+      const fbStatus = params.get('facebook') || params.get('status')
+      if (fbStatus === 'success' && window.showToast) {
+        window.showToast('Facebook 授權成功，稍後將自動同步貼文。', { variant: 'success' })
+        params.delete('facebook')
+        params.delete('status')
+        params.delete('message')
+        const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}${window.location.hash}`
+        window.history.replaceState({}, '', newUrl)
+      } else if (fbStatus && fbStatus !== 'success' && window.showToast) {
+        window.showToast('Facebook 授權失敗，請再試一次。', { variant: 'error' })
+        params.delete('facebook')
+        params.delete('status')
+        params.delete('message')
+        const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}${window.location.hash}`
+        window.history.replaceState({}, '', newUrl)
+      }
+    })
   </script>
   <script>
     (function initAccountSettings(){
