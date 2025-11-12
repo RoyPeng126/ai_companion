@@ -184,10 +184,74 @@
             <p class="helper-text">按下「開始錄音」說出想提醒的事，系統可轉成備忘錄，並由 AI 夥伴語音回覆。</p>
           </div>
         </article>
-        <article class="card">
-          <h3>社區互動</h3>
-          <p>每週五晚上 8 點與家人視訊、每週日分享散步照片，AI 奶奶會提醒並給予鼓勵。</p>
-          <a class="btn secondary" href="forum.html">前往社群公園</a>
+        <article class="card friend-forum-card" data-friend-forum aria-live="polite">
+          <div class="card-header">
+            <div>
+              <p class="status-pill">好友限定</p>
+              <h3>社群論壇活動</h3>
+              <p class="helper-text">互相成為好友後，才能看到活動並回覆是否參加。</p>
+            </div>
+            <button class="btn secondary" type="button" data-friend-refresh>重新整理</button>
+          </div>
+          <div class="friend-forum__meta" data-friend-meta>
+            <p>我的 User ID：<strong data-user-id>載入中</strong></p>
+            <p>註冊手機：<span data-user-phone>載入中</span></p>
+          </div>
+          <div class="friend-forum__body" data-friend-forum-body>
+            <section class="friend-requests">
+              <div class="friend-requests__header">
+                <h4>好友邀請</h4>
+                <span class="badge" data-request-count>0</span>
+              </div>
+              <div class="friend-requests__lists">
+                <div>
+                  <h5>收到的邀請</h5>
+                  <ul class="list" data-friend-incoming></ul>
+                </div>
+                <div>
+                  <h5>我送出的邀請</h5>
+                  <ul class="list" data-friend-sent></ul>
+                </div>
+              </div>
+              <form class="friend-form" data-friend-request-form>
+                <label for="friendPhone">輸入好友手機號碼</label>
+                <input type="tel" id="friendPhone" name="phone" inputmode="numeric" placeholder="09xxxxxxxx" required>
+                <button class="btn primary" type="submit">送出邀請</button>
+                <p class="helper-text">每位長輩最多可加入 10 位好友。</p>
+              </form>
+            </section>
+
+            <section class="friend-list-section">
+              <div class="friend-list__header">
+                <h4>好友名單</h4>
+                <span class="helper-text" data-friend-count></span>
+              </div>
+              <ul class="pill-list" data-friend-list></ul>
+            </section>
+
+            <section class="friend-events">
+              <h4>好友論壇活動</h4>
+              <ul class="list" data-friend-events></ul>
+              <form class="friend-form" data-friend-event-form>
+                <label for="friendEventTitle">活動名稱</label>
+                <input type="text" id="friendEventTitle" name="title" placeholder="例如：週三晨走" required>
+
+                <label for="friendEventTime">時間</label>
+                <input type="datetime-local" id="friendEventTime" name="start_time" required>
+
+                <label for="friendEventLocation">地點</label>
+                <input type="text" id="friendEventLocation" name="location" placeholder="集合位置（可選）">
+
+                <label for="friendEventParticipants">想邀請的好友 User ID（可留白）</label>
+                <input type="text" id="friendEventParticipants" name="participant_user_ids" placeholder="101, 205">
+                <button class="btn secondary" type="submit">發布活動</button>
+              </form>
+            </section>
+          </div>
+          <div class="friend-forum__empty" data-friend-forum-empty hidden>
+            <p>此區塊僅提供長輩帳號使用。請協助長輩分享手機與 User ID，讓好友可以加入。</p>
+            <a class="btn secondary" href="forum.html">前往社群公園</a>
+          </div>
         </article>
         <article class="card facebook-feed-card" data-facebook-feed>
           <div class="card-header">
@@ -232,7 +296,9 @@
     })();
   </script>
   <script src="assets/js/app.js"></script>
+  <script src="assets/js/toast.js"></script>
   <script src="assets/js/facebook-feed.js"></script>
+  <script src="assets/js/friend-forum.js"></script>
   <script src="assets/js/settings.js"></script>
   <script src="assets/js/chat.js"></script>
   <script src="assets/js/reminders.js"></script>

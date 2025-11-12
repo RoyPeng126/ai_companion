@@ -12,6 +12,8 @@ import geofenceRouter from './routes/geofence.js'
 import eventsRouter from './routes/events.js'
 import facebookRouter from './routes/facebook.js'
 import familyFeedRouter from './routes/familyFeed.js'
+import friendsRouter from './routes/friends.js'
+import friendEventsRouter from './routes/friendEvents.js'
 
 const app = express()
 const defaultOrigins = [
@@ -42,6 +44,8 @@ app.use('/api/geofence', geofenceRouter)
 app.use('/api/events', eventsRouter)
 app.use('/api/facebook', facebookRouter)
 app.use('/api/family-feed', familyFeedRouter)
+app.use('/api/friends', friendsRouter)
+app.use('/api/friend-events', friendEventsRouter)
 
 app.use((err, req, res, next) => {
   console.error(err)

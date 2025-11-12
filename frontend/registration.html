@@ -26,6 +26,9 @@
     .submit-button{width:100%;padding:18px;margin-top:10px;background:#eb515c;color:#fff;border:none;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer}
     .helper-text{text-align:center;margin-top:18px;color:#6b7280;font-size:14px}
     .helper-text a{color:#eb515c;font-weight:600;text-decoration:none}
+    .success-panel{margin-top:20px;padding:20px;border-radius:20px;border:1px dashed rgba(235,81,92,.4);background:#fff6f7;text-align:center}
+    .success-panel__id{font-size:28px;font-weight:700;margin:12px 0}
+    .success-panel__actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
   </style>
   </head>
   <body class="mobile-shell">
@@ -49,9 +52,13 @@
             <label for="nickname">關懷對象暱稱</label>
             <input id="nickname" name="nickname" type="text" placeholder="請輸入暱稱" required>
           </div>
-          <div class="form-group">
+          <div class="form-group" id="emailGroup">
             <label for="email">電子郵件</label>
-            <input id="email" name="email" type="email" placeholder="name@example.com" required>
+            <input id="email" name="email" type="email" placeholder="name@example.com">
+          </div>
+          <div class="form-group" id="phoneGroup" hidden>
+            <label for="phone">手機號碼</label>
+            <input id="phone" name="phone" type="tel" inputmode="numeric" placeholder="09xxxxxxxx">
           </div>
           <div class="form-group">
             <label for="password">設定密碼</label>
@@ -64,6 +71,15 @@
           <button type="submit" class="submit-button">建立帳號</button>
           <p class="helper-text">已有帳號？<a href="login.html">登入</a></p>
         </form>
+        <div id="elderSuccessPanel" class="success-panel" hidden>
+          <h3>長輩註冊完成</h3>
+          <p>請妥善保存以下 User ID，提供給家人與好友進行連結：</p>
+          <div class="success-panel__id" data-elder-id>—</div>
+          <div class="success-panel__actions">
+            <button type="button" class="btn secondary" id="copyElderIdBtn">複製 User ID</button>
+            <a class="btn primary" href="login.html">前往登入</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -143,9 +159,26 @@
       if(!role && storedRole) role=storedRole
       if(role){try{sessionStorage.setItem(storageKey,role)}catch(_){/* ignore */}}
 
+      const normalizeRole=(value='')=>{
+        const text=String(value).trim().toLowerCase()
+        if(['grandpa','grandma','senior','elder'].includes(text)) return 'elder'
+        if(text==='family') return 'family'
+        if(text==='social-worker'||text==='caregiver') return 'caregiver'
+        return text
+      }
+
       const userRole=document.getElementById('userRole')
       const avatarInner=document.getElementById('avatarInner')
       const avatarCircle=document.querySelector('.avatar-circle')
+      const emailGroup=document.getElementById('emailGroup')
+      const phoneGroup=document.getElementById('phoneGroup')
+      const emailInput=document.getElementById('email')
+      const phoneInput=document.getElementById('phone')
+      const form=document.getElementById('registerForm')
+      const errorEl=document.getElementById('register-error')
+      const successPanel=document.getElementById('elderSuccessPanel')
+      const elderIdLabel=successPanel?.querySelector('[data-elder-id]')
+      const copyBtn=document.getElementById('copyElderIdBtn')
 
       const applyRoleVisuals=(roleKey)=>{
         const info=roleData[roleKey]
@@ -160,41 +193,112 @@
         if(avatarCircle) avatarCircle.style.background=info.bgColor
       }
 
+      const updateFieldVisibility=(roleKey)=>{
+        const normalized=normalizeRole(roleKey)
+        const elderMode=normalized==='elder'
+        if(emailGroup){
+          emailGroup.hidden=elderMode
+        }
+        if(phoneGroup){
+          phoneGroup.hidden=!elderMode
+        }
+        if(emailInput){
+          emailInput.required=!elderMode
+          if(elderMode) emailInput.value=''
+        }
+        if(phoneInput){
+          phoneInput.required=elderMode
+          if(!elderMode) phoneInput.value=''
+        }
+      }
+
       applyRoleVisuals(role)
+      updateFieldVisibility(role)
 
       const API_BASE=(localStorage.getItem('AI_COMPANION_API_BASE')||'http://localhost:3001').replace(/\/$/,'')
-      const form=document.getElementById('registerForm')
-      const errorEl=document.getElementById('register-error')
+
+      const showError=(message)=>{
+        if(!errorEl) return
+        errorEl.textContent=message
+        errorEl.style.display='block'
+      }
 
       form.addEventListener('submit',async (e)=>{
         e.preventDefault()
         if (errorEl) errorEl.style.display='none'
-        const email=(document.getElementById('email')?.value||'').trim()
+        const normalizedRole=normalizeRole(role||storedRole||'')
+        const elderMode=normalizedRole==='elder'
+        const email=(emailInput?.value||'').trim()
+        const phoneRaw=(phoneInput?.value||'').trim()
+        const phone=phoneRaw.replace(/\D+/g,'')
         const password=document.getElementById('password')?.value||''
         const confirm=document.getElementById('confirmPassword')?.value||''
         const nickname=(document.getElementById('nickname')?.value||'').trim()
-        if(!email||!password){
-          errorEl.textContent='請輸入電子郵件與密碼'; errorEl.style.display='block'; return
+        if(!password){
+          showError('請輸入密碼')
+          return
         }
         if(password!==confirm){
-          errorEl.textContent='密碼不一致，請重新輸入'; errorEl.style.display='block'; return
+          showError('密碼不一致，請重新輸入')
+          return
+        }
+        if(elderMode && !phone){
+          showError('請輸入手機號碼')
+          return
+        }
+        if(!elderMode && !email){
+          showError('請輸入電子郵件')
+          return
+        }
+        const payload={
+          password,
+          username: nickname || (email ? email.split('@')[0] : `elder_${phone.slice(-4)}`),
+          full_name: nickname || null,
+          role: normalizedRole,
+          charactor: normalizedRole
+        }
+        if(elderMode){
+          payload.phone=phone
+        }else{
+          payload.email=email
         }
         try{
           const res=await fetch(`${API_BASE}/api/auth/register`,{
             method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
-            body: JSON.stringify({ email, password, username: nickname||email.split('@')[0], full_name: nickname||null })
+            body: JSON.stringify(payload)
           })
+          const data=await res.json().catch(()=>({}))
           if(res.ok){
-            // 註冊成功 → 前往登入
-            location.href='login.html'
-          }else if(res.status===409){
-            errorEl.textContent='此帳號已被註冊'; errorEl.style.display='block'
+            const user=data?.user
+            if(elderMode && user){
+              form.hidden=true
+              successPanel.hidden=false
+              if(elderIdLabel) elderIdLabel.textContent=user.user_id
+            }else{
+              location.href='login.html'
+            }
           }else{
-            const err=await res.json().catch(()=>({}))
-            errorEl.textContent=err?.error||'註冊失敗，請稍後再試'; errorEl.style.display='block'
+            const messageMap={
+              email_taken:'此電子郵件已被註冊',
+              phone_taken:'此手機號碼已被註冊',
+              username_taken:'暱稱已被使用',
+              invalid_payload:'請檢查欄位是否完整'
+            }
+            showError(messageMap[data?.error]||'註冊失敗，請稍後再試')
           }
         }catch(_){
-          errorEl.textContent='註冊失敗，請稍後再試'; errorEl.style.display='block'
+          showError('註冊失敗，請稍後再試')
+        }
+      })
+
+      copyBtn?.addEventListener('click',async ()=>{
+        const text=elderIdLabel?.textContent?.trim()
+        if(!text) return
+        try{
+          await navigator.clipboard?.writeText(text)
+          alert('User ID 已複製')
+        }catch(_){
+          alert('請手動複製：'+text)
         }
       })
     })()

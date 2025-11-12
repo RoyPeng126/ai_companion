@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import pool from '../db/pool.js'
 import { withCookies, requireAuth } from '../middleware/auth.js'
 import { changePasswordLimiter } from '../middleware/limiters.js'
+import { normalizeEmail, normalizePhone, normalizeRole, normalizeOwnerIds } from '../utils/normalize.js'
 
 const router = express.Router()
 
@@ -40,64 +41,105 @@ const clearAuthCookie = (res) => {
   res.clearCookie(COOKIE_NAME, { path: '/' })
 }
 
-const normalizeEmail = (email = '') => String(email).trim().toLowerCase()
-
-// Normalize UI role value to DB stored charactor
-// elder | family | caregiver
-const normalizeRole = (role = '') => {
-  const r = String(role).trim().toLowerCase()
-  if (r === 'grandpa' || r === 'grandma' || r === 'senior' || r === 'elder') return 'elder'
-  if (r === 'family') return 'family'
-  if (r === 'social-worker' || r === 'caregiver') return 'caregiver'
-  return ''
-}
-
 // POST /api/auth/register
 router.post('/register', async (req, res, next) => {
   try {
-    const { email, password, username, full_name, age, owner_user_id, relation, phone, address } = req.body || {}
-    // Accept role from multiple sources: body.charactor, body.role, or query.role
+    const {
+      email,
+      phone,
+      password,
+      username,
+      full_name,
+      age,
+      owner_user_id,
+      owner_user_ids,
+      relation,
+      address
+    } = req.body || {}
     const rawRole = req.body?.charactor ?? req.body?.role ?? req.query?.role
     const charactor = normalizeRole(rawRole)
-
     const normEmail = normalizeEmail(email)
-    if (!normEmail || !password) {
+    const normPhone = normalizePhone(phone)
+    const isElder = charactor === 'elder'
+    const normalizedOwnerIds = normalizeOwnerIds(
+      owner_user_ids ?? (owner_user_id !== undefined ? owner_user_id : undefined)
+    )
+
+    if (!password) {
       return res.status(400).json({ error: '缺少必要欄位' })
     }
-    try { console.log('[auth.register] email=%s role(raw)=%s normalized=%s', normEmail, rawRole ?? null, charactor || null) } catch (_) {}
+    if (isElder) {
+      if (!normPhone) {
+        return res.status(400).json({ error: '需要有效的手機號碼' })
+      }
+    } else if (!normEmail) {
+      return res.status(400).json({ error: '需要有效的電子郵件' })
+    }
 
-    // Check duplicate
-    const dup = await pool.query(
-      'SELECT 1 FROM users WHERE lower(email) = $1 OR username = $2 LIMIT 1',
-      [normEmail, username || null]
-    )
-    if (dup.rowCount > 0) {
-      return res.status(409).json({ error: '帳號已存在' })
+    try {
+      console.log(
+        '[auth.register] role=%s email=%s phone=%s (raw role=%s)',
+        charactor || null,
+        normEmail || null,
+        normPhone || null,
+        rawRole || null
+      )
+    } catch (_) {}
+
+    if (normEmail) {
+      const dupEmail = await pool.query('SELECT 1 FROM users WHERE lower(email) = $1 LIMIT 1', [normEmail])
+      if (dupEmail.rowCount > 0) {
+        return res.status(409).json({ error: 'email_taken' })
+      }
+    }
+    if (normPhone) {
+      const dupPhone = await pool.query('SELECT 1 FROM users WHERE phone = $1 LIMIT 1', [normPhone])
+      if (dupPhone.rowCount > 0) {
+        return res.status(409).json({ error: 'phone_taken' })
+      }
+    }
+    if (username) {
+      const dupUsername = await pool.query('SELECT 1 FROM users WHERE username = $1 LIMIT 1', [username])
+      if (dupUsername.rowCount > 0) {
+        return res.status(409).json({ error: 'username_taken' })
+      }
     }
 
     const hash = await bcrypt.hash(password, 10)
+    const resolvedUsername =
+      username ||
+      (full_name ? full_name.replace(/\s+/g, '') : '') ||
+      (normEmail ? normEmail.split('@')[0] : '') ||
+      (normPhone ? `elder_${normPhone.slice(-4)}` : `user_${Date.now()}`)
 
     const insert = await pool.query(
-      `INSERT INTO users (username, email, password_hash, owner_user_id, relation, full_name, age, phone, address, charactor)
+      `INSERT INTO users (username, email, password_hash, owner_user_ids, relation, full_name, age, phone, address, charactor)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-       RETURNING user_id, email, username, full_name, charactor`,
+       RETURNING user_id, email, username, full_name, phone, charactor, owner_user_ids`,
       [
-        username || normEmail.split('@')[0],
-        normEmail,
+        resolvedUsername,
+        normEmail || null,
         hash,
-        owner_user_id ?? null,
+        normalizedOwnerIds,
         relation ?? null,
         full_name ?? null,
         Number.isFinite(Number(age)) ? Number(age) : null,
-        phone ?? null,
+        normPhone || null,
         address ?? null,
         charactor || null
       ]
     )
 
     const user = insert.rows[0]
-    try { console.log('[auth.register] inserted user_id=%s charactor=%s', user?.user_id ?? null, (user?.charactor ?? '').toString().trim() || null) } catch (_) {}
-    // Auto login on register (optional). Here we return success and let UI redirect to login.
+    try {
+      console.log(
+        '[auth.register] inserted user_id=%s charactor=%s phone=%s',
+        user?.user_id ?? null,
+        (user?.charactor ?? '').toString().trim() || null,
+        user?.phone ?? null
+      )
+    } catch (_) {}
+
     return res.status(201).json({ user })
   } catch (error) {
     next(error)
@@ -107,18 +149,30 @@ router.post('/register', async (req, res, next) => {
 // POST /api/auth/login
 router.post('/login', async (req, res, next) => {
   try {
-    const { email, password } = req.body || {}
-    // Accept role from body.role, body.charactor, or query.role
+    const { email, phone, identifier, password } = req.body || {}
     const loginRole = normalizeRole((req.body?.role ?? req.body?.charactor ?? req.query?.role) || '')
-    const normEmail = normalizeEmail(email)
-    if (!normEmail || !password) {
+    const identifierText = typeof identifier === 'string' ? identifier.trim() : ''
+    const identifierLooksEmail = identifierText.includes('@')
+    const normEmail = normalizeEmail(email || (identifierLooksEmail ? identifierText : ''))
+    const phoneCandidate = phone || (!identifierLooksEmail ? identifierText : '')
+    const normPhone = normalizePhone(phoneCandidate)
+
+    if ((!normEmail && !normPhone) || !password) {
       return res.status(400).json({ error: '缺少必要欄位' })
     }
 
-    const result = await pool.query(
-      'SELECT user_id, email, username, full_name, password_hash, charactor FROM users WHERE lower(email) = $1 LIMIT 1',
-      [normEmail]
-    )
+    let result
+    if (normEmail) {
+      result = await pool.query(
+        'SELECT user_id, email, username, full_name, password_hash, charactor FROM users WHERE lower(email) = $1 LIMIT 1',
+        [normEmail]
+      )
+    } else {
+      result = await pool.query(
+        'SELECT user_id, email, username, full_name, password_hash, charactor FROM users WHERE phone = $1 LIMIT 1',
+        [normPhone]
+      )
+    }
 
     if (result.rowCount === 0) {
       return res.status(401).json({ error: 'invalid_credentials' })
@@ -130,21 +184,27 @@ router.post('/login', async (req, res, next) => {
       return res.status(401).json({ error: 'invalid_credentials' })
     }
 
-    // Enforce role match only if DB has charactor set
     const userRole = (user.charactor || '').toString().trim()
     if (userRole) {
       if (!loginRole || loginRole !== normalizeRole(userRole)) {
-        try { console.warn('[auth.login] role mismatch email=%s db=%s login=%s', user.email, userRole, loginRole) } catch (_) {}
+        try { console.warn('[auth.login] role mismatch account=%s db=%s login=%s', normEmail || normPhone, userRole, loginRole) } catch (_) {}
         return res.status(401).json({ error: 'invalid_credentials' })
       }
     } else {
-      try { console.log('[auth.login] no charactor set for email=%s (compat allow)', user.email) } catch (_) {}
+      try { console.log('[auth.login] no charactor set for account=%s (compat allow)', normEmail || normPhone) } catch (_) {}
     }
 
     const token = signToken({ uid: user.user_id })
     setAuthCookie(res, token)
 
-    return res.json({ user: { user_id: user.user_id, email: user.email, username: user.username, full_name: user.full_name } })
+    return res.json({
+      user: {
+        user_id: user.user_id,
+        email: user.email,
+        username: user.username,
+        full_name: user.full_name
+      }
+    })
   } catch (error) {
     next(error)
   }
@@ -165,7 +225,7 @@ router.get('/me', async (req, res, next) => {
     }
 
     const result = await pool.query(
-      `SELECT user_id, email, username, full_name, owner_user_id, relation, charactor
+      `SELECT user_id, email, username, full_name, owner_user_ids, relation, charactor, phone
        FROM users
        WHERE user_id = $1
        LIMIT 1`,

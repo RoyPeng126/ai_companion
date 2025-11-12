@@ -49,6 +49,9 @@
 
   const resolveElderId = (user) => {
     if (!user) return null;
+    if (Array.isArray(user.owner_user_ids) && user.owner_user_ids.length) {
+      return user.owner_user_ids[0];
+    }
     if (Number.isFinite(user.owner_user_id)) {
       return user.owner_user_id;
     }

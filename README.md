@@ -14,6 +14,17 @@
 - 健康排行榜（`ranking.html`、`assets/js/ranking.js`）：使用示範資料呈現步數 / 服藥 / 聊天指標，可依需求改接 `/api/ranking`。
 - 安全守護與家族資源（`index.html`、`setting.html`、`assets/js/safety-map.js`、`guide.html`、`forum.html`）：Leaflet 地圖搭配 Nominatim 住址搜尋、離線求助指引與簡易社群。
 - 親友最新動態（`index.html`、`assets/js/facebook-feed.js`）：將授權的 Facebook 親友貼文整理在首頁卡片，可一鍵刷新並提供聊天模組引用。
+- 好友社群活動（`index.html`、`assets/js/friend-forum.js`、`setting.html`、`assets/js/elder-link.js`）：長者以手機註冊後取得 User ID，家屬可在設定頁綁定長者，長輩之間可透過手機加好友並在首頁論壇發起好友限定活動。
+- 家族暖心語音（`assets/js/chat.js`）：長者只要說出指定口令（例如「我要加好友，電話是……」），就能透過後端自動呼叫 `/friends`、`/friend-events`、`/events` 等 API 完成好友、活動、提醒等操作。
+
+### 長者專屬語音口令（家族暖心回饋）
+- 「**我要加好友，電話是...**」：解析語音中的數字並送出好友邀請（每位長者最多 10 位好友）。
+- 「**我要看好友邀請**」＋「我要接受／拒絕好友邀請一」：逐筆朗讀邀請並可語音確認或婉拒。
+- 「**我要發起活動...**」：自動建立好友圈活動（含時間、地點），可同步寫入「今日重點提醒」。
+- 「**我要看活動邀請**」＋「我要參加／取消活動一」：查看並語音回覆好友發起的活動。
+- 「**幫我記語音備忘錄 / 提醒我...**」：將自然語句轉成 `user_events` 提醒，不需觸碰按鈕。
+- 「**今天有什麼事要做**」「今天有沒有達成」「我完成提醒一」：朗讀今日提醒、追問活動是否完成並支援語音回報。
+- 系統會在每次聊天結尾主動提醒「尚有幾筆好友／活動邀請」與「多少提醒未確認」，避免長者漏掉任何暖心回饋。這些語音功能僅在長者身分登入時啟用，家屬與社工仍可透過設定頁面協助管理。
 
 ## 後端服務
 - 伺服器核心（`src/server.js`）：啟用 CORS、JSON 解析、日誌與 `/health` 健康檢查，統一掛載 API。
@@ -23,6 +34,7 @@
 - 提醒事件（`routes/events.js`）：`GET/POST/PATCH/DELETE /api/events` 操作 `user_events`，僅允許本人或 owner 操作。
 - 健康與安全（`routes/ranking.js`、`routes/geofence.js`）：排行榜改寫 `data/healthMetrics.json` 示範倉；地理圍欄計算距離並用記憶體通知中心暫存告警。
 - Facebook 親友貼文（`routes/facebook.js`、`routes/familyFeed.js`、`services/facebookService.js`）：使用 Graph API 取得授權家人（user_posts）及粉絲專頁貼文，並支援手動分享資料，提供前端卡片與聊天背景知識使用，內建快取避免頻繁呼叫。
+- 長者綁定與好友圈（`routes/users.js`、`routes/friends.js`、`routes/friendEvents.js`）：`POST /api/users/link-elder` 以長者 User ID + 手機完成家屬指向（可同時綁 3 位長者）、`/api/friends` 系列管理好友邀請/接受、`/api/friend-events` 發起好友限定活動並追蹤參加狀態。
 
 ### API 端點速覽
 ```text
@@ -40,6 +52,15 @@ GET  /api/facebook/posts                          # 取得與呼叫者同家庭�
 GET  /api/facebook/auth/url                       # 取得 Facebook OAuth 登入網址（需登入家屬）
 GET  /api/facebook/auth/callback                  # Facebook OAuth callback（供 Facebook 呼叫）
 GET  /api/family-feed/for-elder/:elderId          # 聚合指定長者的授權貼文＋手動分享
+GET  /api/users/linked-elder                      # 查詢目前使用者綁定的長者
+POST /api/users/link-elder                        # 以長者 User ID + 手機完成 owner 連結（最多 3 位）
+GET  /api/friends                                  # 列出已接受的好友
+GET  /api/friends/requests                         # 列出收到/送出的好友邀請
+POST /api/friends/requests                         # 以手機送出好友邀請（限長者）
+PATCH /api/friends/requests/:id                    # 接受、婉拒或取消邀請
+GET  /api/friend-events                            # 讀取好友圈活動
+POST /api/friend-events                            # 長者發起好友活動
+POST /api/friend-events/:id/rsvp                   # 好友回覆是否參加活動
 GET  /api/events                                  # 依時間範圍列出事件
 POST /api/events                                  # 新增事件（owner 預設為自己）
 PATCH /api/events/:id                             # 更新事件，僅限相關人
@@ -131,18 +152,19 @@ GET  /api/geofence/notifications/:familyId        # 讀取特定家族通知
 ```sql
 CREATE TABLE users (
   user_id SERIAL PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE,
   username TEXT UNIQUE,
   password_hash TEXT NOT NULL,
-  owner_user_id INTEGER,
+  owner_user_ids INTEGER[] NOT NULL DEFAULT '{}'::INTEGER[],
   relation TEXT,
   full_name TEXT,
   age INTEGER,
-  phone TEXT,
+  phone TEXT UNIQUE,
   address TEXT,
   charactor TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT users_owner_ids_len CHECK (array_length(owner_user_ids, 1) <= 3)
 );
 
 CREATE TABLE user_events (
@@ -181,6 +203,65 @@ CREATE TABLE family_feed_shares (
   link_url TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE TABLE elder_friendships (
+  friendship_id SERIAL PRIMARY KEY,
+  requester_id INTEGER NOT NULL REFERENCES users(user_id),
+  addressee_id INTEGER NOT NULL REFERENCES users(user_id),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','accepted','declined','cancelled')),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  responded_at TIMESTAMPTZ,
+  CONSTRAINT elder_friendships_unique UNIQUE (requester_id, addressee_id)
+);
+
+CREATE TABLE elder_friend_events (
+  event_id SERIAL PRIMARY KEY,
+  host_user_id INTEGER NOT NULL REFERENCES users(user_id),
+  title TEXT NOT NULL,
+  description TEXT,
+  start_time TIMESTAMPTZ NOT NULL,
+  location TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE elder_friend_event_participants (
+  id SERIAL PRIMARY KEY,
+  event_id INTEGER NOT NULL REFERENCES elder_friend_events(event_id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'invited' CHECK (status IN ('invited','going','declined')),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT elder_friend_event_participants_unique UNIQUE (event_id, user_id)
+);
+
+> 每位長者最多可擁有 10 位好友，`elder_friendships.status` 控管邀請/接受流程，而 `elder_friend_event_participants` 追蹤好友活動的參加或婉拒回覆。
+```
+
+### owner_user_ids 變更 SQL
+將既有 `owner_user_id` 欄位改為可儲存最多三位長者的 `owner_user_ids` 陣列，可依序執行：
+
+```sql
+BEGIN;
+
+ALTER TABLE public.users
+  ADD COLUMN owner_user_ids INTEGER[] NOT NULL DEFAULT '{}'::INTEGER[];
+
+UPDATE public.users
+  SET owner_user_ids = ARRAY[owner_user_id]
+  WHERE owner_user_id IS NOT NULL;
+
+ALTER TABLE public.users
+  ADD CONSTRAINT users_owner_ids_len CHECK (array_length(owner_user_ids, 1) <= 3);
+
+ALTER TABLE public.users
+  DROP COLUMN owner_user_id;
+
+CREATE INDEX IF NOT EXISTS users_owner_user_ids_gin
+  ON public.users USING gin (owner_user_ids);
+
+COMMIT;
 ```
 
 ## 開發小提醒

@@ -42,7 +42,7 @@ router.get('/for-elder/:elderId', requireAuth, async (req, res, next) => {
     let familyMemberIds = []
     try {
       const { rows } = await pool.query(
-        'SELECT user_id FROM users WHERE owner_user_id = $1 ORDER BY user_id ASC',
+        'SELECT user_id FROM users WHERE $1 = ANY(owner_user_ids) ORDER BY user_id ASC',
         [elderId]
       )
       familyMemberIds = rows.map(row => row.user_id)

@@ -122,7 +122,7 @@ const fetchFamilyUserIds = async (elderId) => {
     SELECT user_id
     FROM users
     WHERE user_id = $1
-       OR owner_user_id = $1
+       OR $1 = ANY(owner_user_ids)
   `
   try {
     const { rows } = await pool.query(sql, [elderId])

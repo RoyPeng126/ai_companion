@@ -133,6 +133,27 @@
         </div>
       </section>
 
+      <section class="card" id="elder-link-card" data-elder-link>
+        <h2>長者帳號連結</h2>
+        <p class="helper-text">家屬與社工輸入長者 User ID 與手機號碼後，即可綁定到正確的長者帳號（最多 3 位）。</p>
+        <div class="elder-link__status" data-elder-link-status>
+          <strong>目前綁定：</strong>
+          <span data-elder-link-text>尚未綁定</span>
+        </div>
+        <form class="elder-link__form" data-elder-link-form>
+          <label for="linkElderId">長者 User ID</label>
+          <input type="number" id="linkElderId" name="elder_user_id" min="1" required>
+
+          <label for="linkElderPhone">長者手機號碼</label>
+          <input type="tel" id="linkElderPhone" name="elder_phone" inputmode="numeric" placeholder="09xxxxxxxx" required>
+
+          <button class="btn primary" type="submit">送出連結</button>
+        </form>
+        <div class="elder-link__self" data-elder-self hidden>
+          <p>這是您的 User ID：<strong data-current-elder-id>—</strong>，分享給家人即可完成綁定。</p>
+        </div>
+      </section>
+
       <section class="card" aria-labelledby="voice-settings-title">
         <h2 id="voice-settings-title">語音合成設定</h2>
         <p class="helper-text">
@@ -158,6 +179,7 @@
   </div>
   <script src="assets/js/app.js"></script>
   <script src="assets/js/settings.js"></script>
+  <script src="assets/js/elder-link.js"></script>
   <script src="assets/js/toast.js"></script>
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
