@@ -605,6 +605,27 @@
 
       // hide the mark-done button by not appending it
       actions.appendChild(removeButton);
+      // Append a per‑memo "加入備忘錄" button (green) to the right of delete
+      (function(){
+        try { removeButton.textContent = '刪除'; } catch(_) {}
+        const addBtn = document.createElement('button');
+        addBtn.className = 'btn';
+        addBtn.type = 'button';
+        addBtn.textContent = '加入備忘錄';
+        try {
+          addBtn.style.background = '#10B981';
+          addBtn.style.border = '1px solid #059669';
+          addBtn.style.color = '#ffffff';
+          addBtn.style.marginLeft = '8px';
+        } catch(_) {}
+        addBtn.addEventListener('click', () => {
+          try {
+            const ev = new CustomEvent('add-reminder-from-memo', { detail: { id: memo.id, text: memo.text } });
+            document.dispatchEvent(ev);
+          } catch(_) {}
+        });
+        actions.appendChild(addBtn);
+      })();
 
       item.appendChild(meta);
       item.appendChild(text);
@@ -1073,6 +1094,15 @@
     if (!window.aiCompanion.deleteLatestMemo) {
       window.aiCompanion.deleteLatestMemo = () => {
         try { if (Array.isArray(memos) && memos.length) { memos.shift(); saveMemos(); renderMemos(); } } catch(_){}
+      };
+    }
+    if (!window.aiCompanion.deleteMemoById) {
+      window.aiCompanion.deleteMemoById = (id) => {
+        try {
+          memos = Array.isArray(memos) ? memos.filter(m => m.id !== id) : [];
+          saveMemos();
+          renderMemos();
+        } catch(_){}
       };
     }
     if (!window.aiCompanion.startVoiceRecording) {

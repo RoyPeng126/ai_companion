@@ -83,6 +83,7 @@
       </div>
     </div>
   </div>
+  <script src="assets/js/config.js"></script>
   <script>
          const roleData = {
         grandpa: {
@@ -215,7 +216,7 @@
       applyRoleVisuals(role)
       updateFieldVisibility(role)
 
-      const API_BASE=(localStorage.getItem('AI_COMPANION_API_BASE')||'http://localhost:3001').replace(/\/$/,'')
+      const API_BASE=(window.aiCompanion?.getApiBase?.()||'http://localhost:3001').replace(/\/$/,'')
 
       const showError=(message)=>{
         if(!errorEl) return

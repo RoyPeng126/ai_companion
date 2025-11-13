@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import cookieParser from 'cookie-parser'
 import bcrypt from 'bcryptjs'
 import pool from '../db/pool.js'
-import { withCookies, requireAuth } from '../middleware/auth.js'
+import { withCookies, requireAuth, extractToken } from '../middleware/auth.js'
 import { changePasswordLimiter } from '../middleware/limiters.js'
 import { normalizeEmail, normalizePhone, normalizeRole, normalizeOwnerIds } from '../utils/normalize.js'
 
@@ -198,6 +198,7 @@ router.post('/login', async (req, res, next) => {
     setAuthCookie(res, token)
 
     return res.json({
+      token,
       user: {
         user_id: user.user_id,
         email: user.email,
@@ -213,7 +214,7 @@ router.post('/login', async (req, res, next) => {
 // GET /api/auth/me
 router.get('/me', async (req, res, next) => {
   try {
-    const token = req.cookies?.[COOKIE_NAME]
+    const token = extractToken(req)
     if (!token) {
       return res.status(401).json({ error: 'unauthorized' })
     }

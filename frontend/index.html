@@ -77,46 +77,7 @@
         <article class="card">
           <h3>今日重點提醒</h3>
           <ul class="list" id="today-list"></ul>
-          <div class="today-add-controls">
-            <button class="btn secondary" type="button" id="addEventBtn">新增提醒</button>
-          </div>
-          <form id="addEventForm" class="today-add-form" style="display: none;">
-            <div class="today-form-group">
-              <label for="evtTitle">提醒主題</label>
-              <input type="text" id="evtTitle" placeholder="例如：下午散步" required>
-            </div>
-            <div class="today-form-group">
-              <label for="evtCategory">提醒類別</label>
-              <select id="evtCategory">
-                <option value="">選擇類別（可選）</option>
-                <option value="health">健康照護</option>
-                <option value="family">家庭互動</option>
-                <option value="social">社交活動</option>
-                <option value="life">生活日程</option>
-              </select>
-            </div>
-            <div class="today-form-group">
-              <label for="evtDesc">提醒說明</label>
-              <textarea id="evtDesc" rows="2" placeholder="補充說明（可選）"></textarea>
-            </div>
-            <div class="today-form-grid">
-              <div class="today-form-group">
-                <label for="evtDate">日期</label>
-                <input type="date" id="evtDate" required>
-              </div>
-              <div class="today-form-group">
-                <label for="evtTime">時間</label>
-                <input type="time" id="evtTime" required>
-              </div>
-              <div class="today-form-group">
-                <label for="evtRemind">提醒時間</label>
-                <input type="time" id="evtRemind">
-              </div>
-            </div>
-            <div class="today-form-actions">
-              <button class="btn secondary" type="button" id="cancelAdd">取消</button>
-              <button class="btn primary" type="submit">儲存提醒</button>
-            </div>
+          
           </form>
           <p class="helper-text">提醒來源可由長者語音新增或家屬遠端同步。</p>
         </article>
@@ -353,15 +314,26 @@
   </script>
 
   <!-- 授權守門與使用者選單 -->
+  <script src="assets/js/config.js"></script>
   <script>
     (async function guardAuth() {
-      const API_BASE = (localStorage.getItem('AI_COMPANION_API_BASE') || 'http://localhost:3001').replace(/\/$/, '')
-      try { const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' }); if (!res.ok) location.href = 'login.html?error=login_required' } catch { location.href = 'login.html?error=login_required' }
+      const API_BASE = (window.aiCompanion?.getApiBase?.() || 'http://localhost:3001').replace(/\/$/, '')
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
+        if (!res.ok) {
+          if (res.status === 401) {
+            try { window.aiCompanion?.clearAuthToken?.() } catch (_) {}
+          }
+          location.href = 'login.html?error=login_required'
+        }
+      } catch {
+        location.href = 'login.html?error=login_required'
+      }
     })()
   </script>
   <script>
     (function initUserMenu(){
-      const API_BASE = (localStorage.getItem('AI_COMPANION_API_BASE') || 'http://localhost:3001').replace(/\/$/, '')
+      const API_BASE = (window.aiCompanion?.getApiBase?.() || 'http://localhost:3001').replace(/\/$/, '')
       const btn = document.getElementById('avatarBtn'), dd = document.getElementById('userDropdown'), initialsEl = document.getElementById('avatarInitials'), avatarImg = document.getElementById('avatarImage'), nameEl = document.getElementById('umName'), emailEl = document.getElementById('umEmail'), logoutBtn = document.getElementById('umLogout')
       function toInitials(name){ if(!name) return 'U'; const parts=String(name).trim().split(/\s+/); return parts.length===1?parts[0].slice(0,2).toUpperCase():(parts[0][0]+parts[1][0]).toUpperCase() }
       let announced = false
@@ -406,7 +378,11 @@
       function onDocClick(e){ if(!dd.contains(e.target) && !btn.contains(e.target)) closeMenu() }
       function onEsc(e){ if(e.key==='Escape') closeMenu() }
       if (btn) btn.addEventListener('click', (e)=>{ e.stopPropagation(); dd.hidden ? openMenu() : closeMenu() })
-      if (logoutBtn) logoutBtn.addEventListener('click', async ()=>{ try { await fetch(`${API_BASE}/api/auth/logout`, { method:'POST', credentials:'include' }) } catch {} location.href='login.html?error=login_required' })
+      if (logoutBtn) logoutBtn.addEventListener('click', async ()=>{
+        try { await fetch(`${API_BASE}/api/auth/logout`, { method:'POST', credentials:'include' }) } catch {}
+        try { window.aiCompanion?.clearAuthToken?.() } catch (_) {}
+        location.href='login.html?error=login_required'
+      })
       loadUser()
     })()
   </script>

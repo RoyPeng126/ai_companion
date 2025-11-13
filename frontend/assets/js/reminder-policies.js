@@ -24,6 +24,29 @@
     }
   };
 
+  // 最終標題清理：去掉時間字詞、前導/末尾標點，並在半小時情境移除開頭孤立的「半」
+  function sanitizeTitleAfterTime(raw, opts = {}){
+    const src = String(raw || '');
+    let s = src
+      .replace(/^(請|可以)?\s*(提醒我|幫我提醒|幫我|請提醒)\s*/, '')
+      .replace(/(今天|明天|後天|上午|早上|中午|下午|晚上|傍晚)/g, '')
+      // 8點30、八點三十分
+      .replace(/([零〇一二兩三四五六七八九十\d]{1,3})\s*點\s*([零〇一二兩三四五六七八九十\d]{1,2})\s*分/g, '')
+      // 8:30 / 08:30
+      .replace(/\b(\d{1,2})[:：]\s*\d{2}\b/g, '')
+      // 8點
+      .replace(/([零〇一二兩三四五六七八九十\d]{1,3})\s*點\b/g, '')
+      // 8點半
+      .replace(/([零〇一二兩三四五六七八九十\d]{1,3})\s*點半/g, '')
+      .replace(/^[，、。,. \t]+/, '')
+      .replace(/[，、。,. \t]+$/, '');
+    if (opts && (opts.isHalf || /點半/.test(src))) {
+      s = s.replace(/^[，、。,. \t]*半(?=\S)/, '');
+    }
+    s = s.replace(/[，、。,.]{2,}/g, '，').replace(/^[，、。,.]+/, '');
+    return s.trim();
+  }
+
   const ZH_DIGITS = { '零':0, '〇':0, '一':1, '二':2, '兩':2, '三':3, '四':4, '五':5, '六':6, '七':7, '八':8, '九':9 };
   const zhWordToNumber = (value) => {
     if (typeof value !== 'string') return Number.isFinite(value) ? value : NaN;
@@ -290,8 +313,7 @@
     const toTimeLabel = (iso) => {
       try { const d = new Date(iso); const h = d.getHours(); const m = d.getMinutes(); const hh = (h%12)||12; if (m===0) return `${hh}點`; if (m===30) return `${hh}點半`; return `${hh}點${String(m).padStart(2,'0')}分`; } catch { return '' }
     };
-    const finalQ = events.map(ev => { const leadMin = Math.max(0, Math.round((new Date(ev.start_time) - new Date(ev.reminder_time))/60000)); const leadText = leadMin ? `提前${leadMin}分鐘` : ''; const tLabel = toTimeLabel(ev.start_time); return `我要${leadText}${leadText?'':''}提醒你${tLabel}要${ev.title}嗎？`; }).join(' ');
-    try { await window.speakViaYating(finalQ) } catch(_) { speakTextIfAvailable(finalQ) }
+    // 不在顯示卡片時播放語音，改為新增成功後再播出提示
     const result = await new Promise((resolve)=>{
       redo.addEventListener('click', ()=>{
         try { if (window.aiCompanion && window.aiCompanion.deleteLatestMemo) window.aiCompanion.deleteLatestMemo(); } catch(_){}
@@ -349,6 +371,13 @@
           if (cfg.required.category && !get('category')) cat = addInput('類別','text','', 'fCat');
           if (cfg.required.description && !get('description')) desc = addInput('說明','text','', 'fDesc');
           panel.appendChild(grid);
+          // 右上角關閉（叉叉）按鈕
+          const closeBtn = document.createElement('button');
+          closeBtn.type = 'button';
+          closeBtn.setAttribute('aria-label','關閉');
+          closeBtn.textContent = '✕';
+          closeBtn.style.cssText = 'position:absolute;top:10px;right:10px;border:none;background:transparent;font-size:18px;cursor:pointer;line-height:1';
+          panel.appendChild(closeBtn);
           const errorMsg = document.createElement('p');
           errorMsg.style.cssText = 'color:#dc2626;font-size:14px;margin:0 0 8px;';
           errorMsg.hidden = true;
@@ -466,6 +495,7 @@
             overlay.addEventListener('click', overlayHandler);
             cancel.addEventListener('click', cancelHandler, { once:true });
             ok.addEventListener('click', okHandler);
+            closeBtn.addEventListener('click', cancelHandler, { once:true });
           });
           try { document.body.removeChild(overlay) } catch(_){}
           if (!confirmedMissing) { return { ok:false, cancelled:true }; }
@@ -486,6 +516,19 @@
 
         const nextOptions = { ...options, body: JSON.stringify(body) };
         const result = await originalFetchJson(endpoint, nextOptions);
+        // 新增成功後再播語音提示
+        try {
+          const ok = result && (result.ok === undefined || result.ok === true);
+          if (ok && body && body.title && body.start_time && window.speakViaYating) {
+            const d = new Date(body.start_time);
+            const h = String(d.getHours()).padStart(2,'0');
+            const m = String(d.getMinutes()).padStart(2,'0');
+            const t = `${h}:${m}`;
+            const msg = `已為你加入提醒：${t}，${body.title}`;
+            // 不阻塞：背景播放
+            window.speakViaYating(msg).catch(()=>{});
+          }
+        } catch(_) {}
         if (confirmed) { try { setTimeout(()=>window.location.reload(), 150); } catch(_){} }
         return result;
       }
@@ -591,7 +634,9 @@
           .trim() || latest;
       }
 
-      const payload = { title: finalTitle, category: categoryForSave || null, description: null };
+      const isHalfA = /點半/.test(latest) || (startIso && (new Date(startIso)).getMinutes() === 30);
+      const safeTitleA = sanitizeTitleAfterTime(finalTitle || latest, { isHalf: isHalfA });
+      const payload = { title: safeTitleA, category: categoryForSave || null, description: null };
       if (locationForSave) payload.location = locationForSave;
       if (startIso) {
         payload.start_time = startIso;
@@ -601,6 +646,59 @@
 
       try { await window.aiCompanion.fetchJson('/events', { method:'POST', body: JSON.stringify(payload) }); } catch(_) {}
     }, true);
+
+    // Per-memo add: handle CustomEvent from chat memo list
+    document.addEventListener('add-reminder-from-memo', async (ev) => {
+      try {
+        const detail = ev && ev.detail || {};
+        const memoId = detail.id;
+        const latest = String(detail.text || '').trim();
+        if (!latest) return;
+        const dayOffset = /後天/.test(latest) ? 2 : (/明天|翌日|隔天/.test(latest) ? 1 : 0);
+
+        // Use the same classify-first flow as voice button
+        const fallbackData = (typeof deriveReminderFallback === 'function') ? deriveReminderFallback(latest, dayOffset) : {};
+        let startIso = fallbackData.startIso || null;
+        let finalTitle = fallbackData.title || null;
+        let categoryForSave = fallbackData.category || null;
+        let locationForSave = fallbackData.location || null;
+        const timeoutMs = 1500;
+        const withTimeout = (p) => Promise.race([ p, new Promise((_, rej)=>setTimeout(()=>rej(new Error('timeout')), timeoutMs)) ]);
+        const tryClassify = async () => {
+          const payload = { rawText: latest, tz: 'Asia/Taipei' };
+          try {
+            const res = await withTimeout(window.aiCompanion.fetchJson('/chat/classify', { method:'POST', body: JSON.stringify(payload) }));
+            if (res && !res.error) return res;
+          } catch(_) {}
+          return null;
+        };
+        try {
+          const data = await tryClassify() || {};
+          startIso = startIso || data.startIso || data.start_time || '';
+          if (!startIso) {
+            const d = (data.date || '').toString().trim();
+            const t = (data.time || '').toString().trim();
+            if (d && t) startIso = `${d}T${t}:00+08:00`;
+            else if (t) { const ymd = getDateYMD(dayOffset); startIso = `${ymd}T${t}:00+08:00`; }
+          }
+          if (typeof data.title === 'string' && data.title.trim()) finalTitle = data.title.trim();
+          if (typeof data.category === 'string' && data.category.trim()) categoryForSave = data.category.trim();
+          if (typeof data.location === 'string' && data.location.trim()) locationForSave = data.location.trim();
+        } catch(_) {}
+
+        // Build payload and send
+        const isHalfB = /點半/.test(latest) || (startIso && (new Date(startIso)).getMinutes() === 30);
+        const safeTitleB = sanitizeTitleAfterTime(finalTitle || latest, { isHalf: isHalfB });
+        const payload = { title: safeTitleB, category: categoryForSave || null, description: null };
+        if (locationForSave) payload.location = locationForSave;
+        if (startIso) { payload.start_time = startIso; payload.end_time = startIso; payload.reminder_time = computeLead(startIso, getSettings().lead); }
+        try {
+          await window.aiCompanion.fetchJson('/events', { method:'POST', body: JSON.stringify(payload) });
+          // After success, remove this memo from list
+          if (memoId && window.aiCompanion.deleteMemoById) window.aiCompanion.deleteMemoById(memoId);
+        } catch(_) {}
+      } catch(_) {}
+    });
 
     // Override the default behavior of "加入備忘錄（最近語音）" to trigger Q&A fill-in via interceptor
     document.addEventListener('click', async (event) => {
@@ -635,7 +733,9 @@
         .replace(/[:：]\s*\d{2}/g,'')
         .replace(/[，。,.]+$/,'')
         .trim();
-      const payload = { title: cleanedTitle, category: null, description: null };
+      const isHalfC = /點半/.test(latest) || (start_time && (new Date(start_time)).getMinutes() === 30);
+      const safeTitleC = sanitizeTitleAfterTime(cleanedTitle || latest, { isHalf: isHalfC });
+      const payload = { title: safeTitleC, category: null, description: null };
       // Try naive location extraction
       const lm = latest.match(/(?:在|到|去)\s*([^，。\s]{1,20})/);
       if (lm) payload.location = lm[1].trim();
@@ -697,6 +797,40 @@
 
       check();
       setInterval(check, 60000);
+      // Additional watcher: fire at start_time and follow-up at +10m
+      (function startEventStartAndFollowWatcher(){
+        const lsKey2 = `ai-companion.firedStartFollow.${ymd}`;
+        const load2 = () => { try { return new Set(JSON.parse(localStorage.getItem(lsKey2)||'[]')) } catch { return new Set() } };
+        const save2 = (s) => { try { localStorage.setItem(lsKey2, JSON.stringify(Array.from(s))) } catch(_){} };
+        const fired2 = load2();
+        const notify = async (title, body) => { try { if ('Notification' in window && Notification.permission === 'granted') new Notification(title, { body }); } catch(_){} };
+        const speak = async (text) => { try { if (window.speakViaYating) await window.speakViaYating(text); } catch(_){} };
+        const toHM = (iso) => { try { const d=new Date(iso); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` } catch { return '' } };
+        const tick = async () => {
+          try {
+            const res = await window.aiCompanion.fetchJson(`/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+            const list = Array.isArray(res?.events) ? res.events : [];
+            const now = Date.now();
+            const within = (ts) => Number.isFinite(ts) && ts <= now + 5000 && ts >= now - 60000;
+            for (const ev of list) {
+              if (!ev?.id || !ev.start_time) continue; const id=String(ev.id);
+              const sIso = ev.start_time; const sTs = new Date(sIso).getTime(); if (within(sTs) && !fired2.has(id+':start')) {
+                fired2.add(id+':start'); save2(fired2);
+                const body = `${(window.aiCompanion.formatTimestamp && window.aiCompanion.formatTimestamp(sIso)) || ''}  ${ev.title || ''}${ev.location ? ' @' + ev.location : ''}`.trim();
+                const text = `現在時間 ${toHM(sIso)}。${ev.title || ''}${ev.location ? '，地點 '+ev.location : ''}`;
+                await notify('行程開始提醒', body); await speak(text);
+              }
+              const fIsoTs = (Number.isFinite(sTs) ? sTs + 600000 : NaN);
+              if (within(fIsoTs) && !fired2.has(id+':follow10m')) {
+                fired2.add(id+':follow10m'); save2(fired2);
+                const text = `你開始做了嗎？${toHM(sIso)} 的 ${ev.title || ''}。完成之後記得按確認喔。`;
+                await notify('追蹤提醒', '你開始做了嗎？完成後記得按確認喔。'); await speak(text);
+              }
+            }
+          } catch(_) {}
+        };
+        tick(); setInterval(tick, 60000);
+      })();
     })();
   });
 })();

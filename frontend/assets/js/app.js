@@ -1,6 +1,75 @@
 "use strict";
 
 (function () {
+  const previousApi = window.aiCompanion || {};
+
+  const API_BASE_STORAGE_KEY = "AI_COMPANION_API_BASE";
+  const AUTH_TOKEN_STORAGE_KEY = "AI_COMPANION_AUTH_TOKEN";
+  let proxyGetApiBase = null;
+
+  const sanitizeOrigin = (value) => {
+    if (!value) return "";
+    return String(value).trim().replace(/\/$/, "");
+  };
+
+  const readStoredApiOrigin = () => {
+    try {
+      const stored = window.localStorage?.getItem
+        ? window.localStorage.getItem(API_BASE_STORAGE_KEY)
+        : "";
+      return sanitizeOrigin(stored);
+    } catch (_) {
+      return "";
+    }
+  };
+
+  const deriveDefaultApiOrigin = () => {
+    const protocol = window.location?.protocol || "http:";
+    const hostname = window.location?.hostname || "localhost";
+    const defaultPort = "3001";
+    return sanitizeOrigin(`${protocol}//${hostname || "localhost"}:${defaultPort}`);
+  };
+
+  const resolveApiOrigin = () => {
+    const helper = window.aiCompanion?.getApiBase;
+    if (typeof helper === "function" && helper !== proxyGetApiBase) {
+      const fromHelper = sanitizeOrigin(helper());
+      if (fromHelper) return fromHelper;
+    }
+    const stored = readStoredApiOrigin();
+    if (stored) return stored;
+    return deriveDefaultApiOrigin();
+  };
+
+  const readStoredAuthToken = () => {
+    try {
+      const value = window.localStorage?.getItem
+        ? window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
+        : "";
+      return typeof value === "string" ? value.trim() : "";
+    } catch (_) {
+      return "";
+    }
+  };
+
+  const persistAuthToken = (token) => {
+    const normalized = typeof token === "string" ? token.trim() : "";
+    try {
+      if (normalized) {
+        window.localStorage?.setItem?.(AUTH_TOKEN_STORAGE_KEY, normalized);
+      } else {
+        window.localStorage?.removeItem?.(AUTH_TOKEN_STORAGE_KEY);
+      }
+    } catch (_) {}
+    return normalized;
+  };
+
+  const clearStoredAuthToken = () => {
+    try {
+      window.localStorage?.removeItem?.(AUTH_TOKEN_STORAGE_KEY);
+    } catch (_) {}
+  };
+
   const STORAGE_KEY = "ai-companion.settings";
   const DEFAULT_LANGUAGE_CODE = "zh-TW";
   const DEFAULT_PERSONA_KEY = "senior";
@@ -108,7 +177,7 @@
   }
 
   const DEFAULT_SETTINGS = {
-    apiBaseUrl: "http://localhost:3001/api",
+    apiBaseUrl: `${resolveApiOrigin()}/api`,
     persona: DEFAULT_PERSONA_KEY,
     // Reminder-related defaults
     reminder: {
@@ -206,7 +275,11 @@
     });
   };
 
-  const getBaseUrl = () => currentSettings.apiBaseUrl.replace(/\/$/, "");
+  const getBaseUrl = () => {
+    const origin = resolveApiOrigin();
+    if (origin) return `${origin}/api`.replace(/\/$/, "");
+    return currentSettings.apiBaseUrl.replace(/\/$/, "");
+  };
 
   const apiFetch = async (endpoint, options = {}) => {
     const url = /^https?:\/\//i.test(endpoint)
@@ -221,6 +294,13 @@
       ...options.headers
     };
 
+    if (!headers.Authorization && !headers.authorization) {
+      const token = readStoredAuthToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
     const response = await window.fetch(url, {
       credentials: options.credentials ?? 'include',
       ...options,
@@ -228,6 +308,9 @@
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        clearStoredAuthToken();
+      }
       const message = await response.text();
       throw new Error(
         `[AI Companion] API 呼叫失敗 (${response.status}) ${message}`
@@ -357,7 +440,10 @@
 
   currentSettings = loadSettings();
 
+  proxyGetApiBase = () => resolveApiOrigin();
+
   window.aiCompanion = {
+    ...previousApi,
     get settings() {
       return { ...currentSettings };
     },
@@ -369,7 +455,11 @@
     formatTimestamp: formatTime,
     getActiveRole: getStoredRole,
     setActiveRole: persistRoleValue,
-    normalizeRole: normalizeRoleValue
+    normalizeRole: normalizeRoleValue,
+    getApiBase: previousApi.getApiBase || proxyGetApiBase,
+    getAuthToken: () => readStoredAuthToken(),
+    setAuthToken: (token) => persistAuthToken(token),
+    clearAuthToken: () => clearStoredAuthToken()
   };
 
   document.addEventListener("DOMContentLoaded", () => {

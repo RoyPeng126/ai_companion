@@ -181,6 +181,7 @@
   <script src="assets/js/settings.js"></script>
   <script src="assets/js/elder-link.js"></script>
   <script src="assets/js/toast.js"></script>
+  <script src="assets/js/config.js"></script>
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     crossorigin=""
@@ -648,7 +649,7 @@
   </script>
   <script>
     (function initAccountSettings(){
-      const API_BASE = (localStorage.getItem('AI_COMPANION_API_BASE') || 'http://localhost:3001').replace(/\/$/, '')
+      const API_BASE = (window.aiCompanion?.getApiBase?.() || 'http://localhost:3001').replace(/\/$/, '')
       const ELDER_MATCH = ['elder', 'senior', 'grandpa', 'grandma']
 
       const resolveActiveRole = () => {
