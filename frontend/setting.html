@@ -27,13 +27,29 @@
         <span class="hamburger" aria-hidden="true"></span>
       </button>
       <nav id="site-nav" class="nav-links" data-menu>
-        <a href="index.html">首頁</a>
-        <a href="selection.html">陪伴設定</a>
-        <a href="setting.html" aria-current="page">快速設定</a>
-        <a href="ranking.html">健康排行榜</a>
-        <a href="forum.html">社群公園</a>
-        <a href="guide.html">離線幫助指南</a>
+        <a href="setting.html" aria-current="page">長者設定</a>
+        <a href="care-dashboard.html" aria-current="page">照護總覽</a>
       </nav>
+  <div class="user-menu" id="userMenu" aria-label="使用者選單">
+        <button class="avatar-btn" id="avatarBtn" aria-haspopup="menu" aria-expanded="false" title="使用者選單">
+          <span class="sr-only">打開使用者選單</span>
+          <span class="avatar-frame">
+            <img class="avatar-image" id="avatarImage" alt="使用者頭像" hidden>
+            <span class="avatar-initials" id="avatarInitials">U</span>
+          </span>
+        </button>
+        <div class="menu-dropdown" id="userDropdown" hidden>
+          <div class="user-header">
+            <div class="user-name" id="umName">使用者</div>
+            <div class="user-email" id="umEmail"></div>
+          </div>
+          <a class="menu-item" href="setting.html" id="umAccount">帳號設定</a>
+          <button class="menu-item permissions-row" id="permissions-row" type="button">
+            <span class="permissions-row-title">權限</span>
+          </button>
+          <button class="menu-item" id="umLogout" type="button">登出</button>
+        </div>
+      </div>
     </header>
 
     <main>
@@ -182,6 +198,7 @@
   <script src="assets/js/elder-link.js"></script>
   <script src="assets/js/toast.js"></script>
   <script src="assets/js/config.js"></script>
+  <script src="assets/js/care-dashboard.js"></script>
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     crossorigin=""

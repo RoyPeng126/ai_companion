@@ -31,6 +31,223 @@
   const voiceHeader = chatElement.querySelector('.voice-memos-header');
   const chatActions = chatElement.querySelector('.chat-actions');
 
+  (function injectPermissionRow () {
+    try {
+      const dropdown = document.getElementById('userDropdown');
+      const accountItem = document.getElementById('umAccount');
+      const logoutItem = document.getElementById('umLogout');
+      if (!dropdown || !accountItem || !logoutItem || document.getElementById('permissions-row')) return;
+
+      const row = document.createElement('div');
+      row.className = 'menu-item permissions-row';
+      row.id = 'permissions-row';
+
+      const label = document.createElement('div');
+      label.textContent = '權限';
+      label.className = 'permissions-row-title';
+
+      const box = document.createElement('div');
+      box.className = 'permissions-row-buttons';
+      box.style.display = 'none';
+
+      const notifBtn = document.createElement('button');
+      notifBtn.type = 'button';
+      notifBtn.className = 'btn secondary';
+      notifBtn.textContent = '啟用通知';
+
+      const micBtn = document.createElement('button');
+      micBtn.type = 'button';
+      micBtn.className = 'btn secondary';
+      micBtn.textContent = '啟用麥克風';
+
+      const showToast = (msg) => {
+        try {
+          if (window.AIToast) {
+            window.AIToast.show(msg);
+            return;
+          }
+        } catch (_) {}
+        try {
+          alert(msg);
+        } catch (_) {}
+      };
+
+      const checkNotif = async () => {
+        if (!('Notification' in window)) {
+          notifBtn.disabled = true;
+          notifBtn.textContent = '通知不支援';
+          return;
+        }
+        if (Notification.permission === 'granted') {
+          notifBtn.disabled = true;
+          notifBtn.textContent = '通知已允許';
+          return;
+        }
+        if (Notification.permission === 'denied') {
+          notifBtn.disabled = false;
+          notifBtn.textContent = '需在瀏覽器設定允許通知';
+          return;
+        }
+        notifBtn.disabled = false;
+        notifBtn.textContent = '啟用通知';
+      };
+
+      const requestNotif = async () => {
+        try {
+          if (!('Notification' in window)) {
+            showToast('此瀏覽器不支援通知');
+            return;
+          }
+          const r = await Notification.requestPermission();
+          if (r === 'granted') {
+            try {
+              new Notification('通知已開啟', { body: '之後提醒會顯示在這裡。' });
+            } catch (_) {}
+            notifBtn.disabled = true;
+            notifBtn.textContent = '通知已允許';
+          } else if (r === 'denied') {
+            showToast('通知被拒絕，請到瀏覽器設定頁面允許。');
+          }
+        } catch (_) {
+          showToast('無法請求通知權限');
+        }
+      };
+
+      const checkMic = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          micBtn.disabled = true;
+          micBtn.textContent = '麥克風不支援';
+          return;
+        }
+        if (navigator.permissions && navigator.permissions.query) {
+          try {
+            const p = await navigator.permissions.query({ name: 'microphone' });
+            if (p.state === 'granted') {
+              micBtn.disabled = true;
+              micBtn.textContent = '麥克風已允許';
+              return;
+            }
+            if (p.state === 'denied') {
+              micBtn.disabled = false;
+              micBtn.textContent = '需在瀏覽器設定允許麥克風';
+              return;
+            }
+            micBtn.disabled = false;
+            micBtn.textContent = '啟用麥克風';
+          } catch (_) {
+            micBtn.disabled = false;
+          }
+        } else {
+          micBtn.disabled = false;
+          micBtn.textContent = '啟用麥克風';
+        }
+      };
+
+      const requestMic = async () => {
+        try {
+          const isSecure = location.protocol === 'https:' ||
+            location.hostname === 'localhost' ||
+            location.hostname === '127.0.0.1';
+          if (!isSecure) {
+            showToast('瀏覽器可能因非 HTTPS 限制麥克風。請使用 https 或在瀏覽器設定中允許。');
+          }
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          try {
+            stream.getTracks().forEach(t => t.stop());
+          } catch (_) {}
+          micBtn.disabled = true;
+          micBtn.textContent = '麥克風已允許';
+          showToast('麥克風權限已啟用');
+        } catch (e) {
+          const msg = e && e.name === 'NotAllowedError'
+            ? '已被拒絕麥克風權限，請到瀏覽器設定手動允許。'
+            : '無法啟用麥克風（可能需要 HTTPS 或瀏覽器設定允許）';
+          showToast(msg);
+        }
+      };
+
+      notifBtn.addEventListener('click', requestNotif);
+      micBtn.addEventListener('click', requestMic);
+
+      box.appendChild(notifBtn);
+      box.appendChild(micBtn);
+      row.appendChild(label);
+      row.appendChild(box);
+
+      const openPermissionsDialog = () => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999;';
+
+        const panel = document.createElement('div');
+        panel.style.cssText = 'background:#fff;border-radius:16px;max-width:380px;width:92%;padding:18px 16px;box-shadow:0 10px 30px rgba(0,0,0,.2);font-family:inherit;position:relative;';
+
+        const title = document.createElement('h3');
+        title.textContent = '權限設定';
+        title.style.margin = '0 0 8px';
+        title.style.fontSize = '18px';
+
+        const desc = document.createElement('p');
+        desc.textContent = '建議先啟用通知與麥克風，才能收到提醒並使用語音記錄。';
+        desc.style.margin = '0 0 14px';
+        desc.style.fontSize = '14px';
+        desc.style.color = '#555';
+
+        box.style.display = 'flex';
+        box.style.gap = '8px';
+        box.style.flexWrap = 'wrap';
+
+        notifBtn.style.flex = '1 1 48%';
+        notifBtn.style.borderColor = '#ffd6a0';
+        notifBtn.style.borderWidth = '2px';
+        notifBtn.style.color = '#b41d32';
+        notifBtn.style.background = '#fff7f0';
+
+        micBtn.style.flex = '1 1 48%';
+        micBtn.style.borderColor = '#ffd6a0';
+        micBtn.style.borderWidth = '2px';
+        micBtn.style.color = '#b41d32';
+        micBtn.style.background = '#fff7f0';
+
+        const footer = document.createElement('div');
+        footer.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-top:12px;';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'btn secondary';
+        closeBtn.textContent = '關閉';
+
+        footer.appendChild(closeBtn);
+
+        panel.appendChild(title);
+        panel.appendChild(desc);
+        panel.appendChild(box);
+        panel.appendChild(footer);
+
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
+
+        const close = () => {
+          try {
+            overlay.remove();
+          } catch (_) {}
+          box.style.display = 'none';
+          row.appendChild(box);
+        };
+
+        closeBtn.addEventListener('click', close);
+        overlay.addEventListener('click', (event) => {
+          if (event.target === overlay) close();
+        });
+      };
+
+      dropdown.insertBefore(row, logoutItem);
+      row.addEventListener('click', openPermissionsDialog);
+
+      checkNotif();
+      checkMic();
+    } catch (_) {}
+  })();
+
   // ==== Reminders helpers (text/voice to user_events) ====
   const tzToday = () => {
     try {

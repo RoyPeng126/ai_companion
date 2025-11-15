@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>照護總覽｜智護生活：AI 伴你</title>
+  <link rel="icon" href="assets/image/logo.jpg" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="top-bar" aria-label="主導覽">
+      <div class="brand">
+        <span class="brand-logo" aria-hidden="true">
+          <img src="assets/image/logo.jpg" alt="AI Logo" class="logo-img">
+        </span>
+        <h1>智護生活：照護總覽</h1>
+      </div>
+      <button class="menu-toggle" type="button" aria-controls="site-nav" aria-expanded="false" data-menu-toggle>
+        <span class="sr-only">切換導覽選單</span>
+        <span class="hamburger" aria-hidden="true"></span>
+      </button>
+      <nav id="site-nav" class="nav-links" data-menu>
+        <a href="setting.html" aria-current="page">長者設定</a>
+        <a href="care-dashboard.html" aria-current="page">照護總覽</a>
+      </nav>
+      <div class="user-menu" id="userMenu" aria-label="使用者選單">
+        <button class="avatar-btn" id="avatarBtn" aria-haspopup="menu" aria-expanded="false" title="使用者選單">
+          <span class="sr-only">打開使用者選單</span>
+          <span class="avatar-frame">
+            <img class="avatar-image" id="avatarImage" alt="使用者頭像" hidden>
+            <span class="avatar-initials" id="avatarInitials">U</span>
+          </span>
+        </button>
+        <div class="menu-dropdown" id="userDropdown" hidden>
+          <div class="user-header">
+            <div class="user-name" id="umName">使用者</div>
+            <div class="user-email" id="umEmail"></div>
+          </div>
+          <a class="menu-item" href="setting.html" id="umAccount">帳號設定</a>
+          <button class="menu-item permissions-row" id="permissions-row" type="button">
+            <span class="permissions-row-title">權限</span>
+          </button>
+          <button class="menu-item" id="umLogout" type="button">登出</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="status-pill">家屬與社工專用</p>
+          <h2>關注長者的每日狀態</h2>
+          <p class="helper-text">一次最多可關注三位長者，查看備忘錄與安全紀錄。</p>
+        </div>
+      </section>
+
+      <section class="grid two" aria-label="照護總覽">
+        <article class="card" id="care-elders-card">
+          <h3>我關注的長者</h3>
+          <p class="helper-text">選擇一位長者後，可在右側查看備忘錄與安全紀錄。</p>
+          <ul class="list" id="care-elder-list" aria-label="長者列表"></ul>
+          <div class="today-add-controls" style="margin-top:16px;">
+            <button class="btn secondary care-add-elder-btn" type="button" id="add-elder-btn">新增關注長者</button>
+          </div>
+        </article>
+
+        <article class="card" id="care-detail-card">
+          <h3 id="care-detail-title">長者詳情</h3>
+          <p class="helper-text" id="care-detail-subtitle">請先在左側選擇一位長者。</p>
+          <div id="care-detail-content" aria-live="polite"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/care-dashboard.js"></script>
+</body>
+</html>
+

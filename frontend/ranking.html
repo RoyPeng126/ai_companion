@@ -9,7 +9,7 @@
 </head>
 <body>
   <div class="app-shell">
-   <header class="top-bar" aria-label="主要導覽">
+   <header class="top-bar" aria-label="主導覽">
       <div class="brand">
         <span class="brand-logo" aria-hidden="true">
         <img src="assets/image/logo.jpg" alt="AI Logo" class="logo-img">
@@ -22,31 +22,31 @@
       </button>
       <nav id="site-nav" class="nav-links" data-menu>
         <a href="index.html">首頁</a>
-        <a href="selection.html">陪伴設定</a>
-        <a href="setting.html">快速設定</a>
+        <a href="selection.html">夥伴設定</a>
         <a href="ranking.html" aria-current="page">健康排行榜</a>
-        <a href="forum.html">社群公園</a>
+        <a href="forum.html">社群論壇</a>
         <a href="guide.html">離線幫助指南</a>
       </nav>
     </header>
 
     <main class="lb-main">
-      <!-- 頂部 Hero：只留標語 -->
       <section class="leader-hero">
-        <p class="status-pill">一起加油．健康同行</p>
+        <p class="status-pill">一起加油，守護健康</p>
 
-        <!-- 指標切換：步數 / 服藥 / 聊天 -->
-        <div class="segment" role="tablist" aria-label="選擇顯示指標">
-          <button class="segment__item is-active" role="tab" aria-selected="true" data-metric="steps">步數</button>
-          <button class="segment__item" role="tab" aria-selected="false" data-metric="meds">服藥</button>
-          <button class="segment__item" role="tab" aria-selected="false" data-metric="chat">聊天</button>
+        <div class="segment segment--scope" role="tablist" aria-label="排行榜範圍">
+          <button class="segment__item is-active" type="button" data-scope-toggle data-scope="global">全部</button>
+          <button class="segment__item" type="button" data-scope-toggle data-scope="friends">好友</button>
+        </div>
+
+        <div class="segment" role="tablist" aria-label="選擇顯示的指標">
+          <button class="segment__item is-active" role="tab" aria-selected="true" data-metric="total">總分</button>
+          <button class="segment__item" role="tab" aria-selected="false" data-metric="care">照護任務</button>
+          <button class="segment__item" role="tab" aria-selected="false" data-metric="self">自我任務</button>
           <span class="segment__thumb" aria-hidden="true"></span>
         </div>
       </section>
 
-      <!-- 前三名舞台 -->
       <section class="podium" aria-label="前三名">
-        <!-- 第二名（左） -->
         <div class="podium__item podium--second">
           <div class="avatar" data-avatar></div>
           <div class="podium__bar">
@@ -55,7 +55,6 @@
           </div>
         </div>
 
-        <!-- 第一名（中間） -->
         <div class="podium__item podium--first">
           <div class="avatar big" data-avatar></div>
           <div class="podium__bar">
@@ -64,7 +63,6 @@
           </div>
         </div>
 
-        <!-- 第三名（右） -->
         <div class="podium__item podium--third">
           <div class="avatar" data-avatar></div>
           <div class="podium__bar">
@@ -74,34 +72,29 @@
         </div>
       </section>
 
-      <!-- 舞台下方：名字與分數（左=2名／中=1名／右=3名） -->
       <div class="stage__scores" aria-label="前三名分數">
         <div class="score" data-score-box="2">
-          <p class="score__line"><span data-name>—</span>　<span data-score>—</span></p>
+          <p class="score__line"><span data-name>—</span>：<span data-score>—</span></p>
         </div>
         <div class="score" data-score-box="1">
-          <p class="score__line"><span data-name>—</span>　<span data-score>—</span></p>
+          <p class="score__line"><span data-name>—</span>：<span data-score>—</span></p>
         </div>
         <div class="score" data-score-box="3">
-          <p class="score__line"><span data-name>—</span>　<span data-score>—</span></p>
+          <p class="score__line"><span data-name>—</span>：<span data-score>—</span></p>
         </div>
       </div>
 
-
-      <!-- 名次清單 -->
-      <section class="lb-list" aria-label="完整排行榜">
+      <section class="lb-list" aria-label="完整名次">
         <ol id="lb-list" class="lb-list__items"></ol>
       </section>
 
-     <!-- 同步 + 健康洞察 -->
-      <section class="lb-foot" aria-label="同步與洞察">
+      <section class="lb-foot" aria-label="同步與健康洞察">
         <div class="sync-box">
           <button class="btn primary" type="button" id="sync-btn">立即同步</button>
-          <p class="helper-text">同步後立即更新步數／服藥／聊天資訊。</p>
+          <p class="helper-text">同步後會更新本月分數與排行榜。</p>
         </div>
 
         <div class="insight-box">
-          <!-- 健康洞察（按鈕＋可展開內容） -->
           <button id="insight-toggle"
                   class="btn secondary pill"
                   aria-expanded="false"
@@ -111,13 +104,12 @@
 
           <article id="insight-panel" class="insight-card" hidden>
             <header>
-              <!-- 這個 h3 會隱藏，避免和按鈕重覆顯示文字 -->
               <h3 class="sr-only">健康洞察</h3>
-              <a href="guide.html" class="link">查看全部</a>
+              <a href="guide.html" class="link">查看指南</a>
             </header>
             <ul>
-              <li><strong id="insight-best">—</strong> 表現最佳（本指標）</li>
-              <li>家族今日平均：<strong id="insight-avg">—</strong></li>
+              <li><strong id="insight-best">—</strong> 表現最佳（本月）</li>
+              <li>家族平均：<strong id="insight-avg">—</strong></li>
               <li>連續達標人數：<strong id="insight-streak">—</strong></li>
             </ul>
           </article>

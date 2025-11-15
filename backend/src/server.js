@@ -4,6 +4,8 @@ import express from 'express'
 import bodyParser from 'body-parser'
 import morgan from 'morgan'
 import cors from 'cors'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import chatRouter from './routes/chat.js'
 import authRouter from './routes/auth.js'
 import usersRouter from './routes/users.js'
@@ -14,8 +16,12 @@ import facebookRouter from './routes/facebook.js'
 import familyFeedRouter from './routes/familyFeed.js'
 import friendsRouter from './routes/friends.js'
 import friendEventsRouter from './routes/friendEvents.js'
+import careRouter from './routes/care.js'
 
 const app = express()
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const frontendDir = path.resolve(__dirname, '../../frontend')
 const defaultOrigins = [
   'http://localhost:3000'
 ]
@@ -46,6 +52,13 @@ app.use('/api/facebook', facebookRouter)
 app.use('/api/family-feed', familyFeedRouter)
 app.use('/api/friends', friendsRouter)
 app.use('/api/friend-events', friendEventsRouter)
+app.use('/api/care', careRouter)
+
+app.use(express.static(frontendDir))
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next()
+  res.sendFile(path.join(frontendDir, 'index.html'))
+})
 
 app.use((err, req, res, next) => {
   console.error(err)

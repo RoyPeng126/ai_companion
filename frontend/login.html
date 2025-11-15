@@ -177,7 +177,14 @@
                 window.aiCompanion.clearAuthToken()
               }
             } catch (_) {}
-            location.href = 'index.html'
+
+            const serverRole = normalizeRole(data?.user?.relation || data?.user?.role || data?.role)
+            const finalRole = persistRole(serverRole || normalizedRole)
+            if (finalRole === 'elder' || finalRole === 'senior') {
+              location.href = 'index.html'
+            } else {
+              location.href = 'care-dashboard.html'
+            }
           } else {
             errorEl.textContent = data?.error === 'invalid_credentials'
               ? '登入失敗，可能是帳號或密碼輸入錯誤'
