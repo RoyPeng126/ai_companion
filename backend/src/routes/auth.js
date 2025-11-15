@@ -54,7 +54,8 @@ router.post('/register', async (req, res, next) => {
       owner_user_id,
       owner_user_ids,
       relation,
-      address
+      address,
+      gender
     } = req.body || {}
     const rawRole = req.body?.charactor ?? req.body?.role ?? req.query?.role
     const charactor = normalizeRole(rawRole)
@@ -113,9 +114,9 @@ router.post('/register', async (req, res, next) => {
       (normPhone ? `elder_${normPhone.slice(-4)}` : `user_${Date.now()}`)
 
     const insert = await pool.query(
-      `INSERT INTO users (username, email, password_hash, owner_user_ids, relation, full_name, age, phone, address, charactor)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-       RETURNING user_id, email, username, full_name, phone, charactor, owner_user_ids`,
+      `INSERT INTO users (username, email, password_hash, owner_user_ids, relation, full_name, age, phone, address, charactor, gender)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       RETURNING user_id, email, username, full_name, phone, charactor, owner_user_ids, gender`,
       [
         resolvedUsername,
         normEmail || null,
@@ -126,7 +127,12 @@ router.post('/register', async (req, res, next) => {
         Number.isFinite(Number(age)) ? Number(age) : null,
         normPhone || null,
         address ?? null,
-        charactor || null
+        charactor || null,
+        (gender || '').toString().trim().toLowerCase().startsWith('f')
+          ? 'f'
+          : (gender || '').toString().trim().toLowerCase().startsWith('m')
+            ? 'm'
+            : null
       ]
     )
 

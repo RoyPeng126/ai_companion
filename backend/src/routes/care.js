@@ -244,6 +244,32 @@ router.post('/invitations/:id/accept', requireAuth, async (req, res, next) => {
       )
     }
 
+    const ownerRes = await client.query(
+      'SELECT owner_user_ids FROM users WHERE user_id = $1 FOR UPDATE',
+      [inv.caregiver_id]
+    )
+    const rawOwnerIds = ownerRes.rows[0]?.owner_user_ids
+    const ownerIds = Array.isArray(rawOwnerIds)
+      ? rawOwnerIds
+          .map((value) => {
+            const num = Number(value)
+            return Number.isFinite(num) ? num : null
+          })
+          .filter((num) => num !== null)
+      : []
+    if (!ownerIds.includes(inv.elder_id)) {
+      if (ownerIds.length >= MAX_ACTIVE_ELDERS) {
+        await client.query('ROLLBACK')
+        client.release()
+        return res.status(409).json({ error: 'owner_limit_reached' })
+      }
+      const nextOwnerIds = [...ownerIds, inv.elder_id]
+      await client.query(
+        'UPDATE users SET owner_user_ids = $1, updated_at = now() WHERE user_id = $2',
+        [nextOwnerIds, inv.caregiver_id]
+      )
+    }
+
     const nowIso = new Date().toISOString()
     const title = `${elder.full_name || '長者'} 已同意您的關注邀請`
     await client.query(

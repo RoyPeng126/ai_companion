@@ -16,14 +16,22 @@ const getClient = () => {
 export const generateChatResponse = async ({
   personaKey,
   message,
-  context = []
+  context = [],
+  companionStyles = []
 }) => {
   if (!message) {
     throw new Error('缺少訊息內容，無法產生回覆')
   }
 
   const persona = getPersona(personaKey)
-  const personaPrompt = `${persona.prompt}\n回覆請精簡自然，最多兩句話，每句不超過 20 個字。`
+  const interestHints = Array.isArray(companionStyles) && companionStyles.length
+    ? `長者喜愛的話題：\n${companionStyles.map((item, index) => `${index + 1}. ${item}`).join('\n')}\n回覆時可從上述興趣延伸，並在適當時鼓勵長者分享相關回憶。`
+    : ''
+  const personaPrompt = [
+    persona.prompt,
+    interestHints,
+    '回覆請精簡自然，最多兩句話，每句不超過 20 個字。'
+  ].filter(Boolean).join('\n')
   const genAI = getClient()
   const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest'
   const requestOptions = process.env.GEMINI_API_VERSION

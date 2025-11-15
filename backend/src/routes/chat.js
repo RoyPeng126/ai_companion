@@ -8,6 +8,7 @@ import { fetchUserRelation, resolveElderIdForUser } from '../utils/family.js'
 import pool from '../db/pool.js'
 import { normalizePhone, normalizeRole } from '../utils/normalize.js'
 import { getPersona } from '../utils/personas.js'
+import { recordChatEntry, fetchElderProfile } from '../services/companionStyleService.js'
 
 const sanitizeContext = (context = []) => {
   if (!Array.isArray(context)) return []
@@ -58,6 +59,7 @@ const summarizeFacebookPosts = (posts = []) => {
 }
 
 const FRIEND_LIMIT = 10
+const COMPANION_STYLE_LIMIT = 5
 const TAIPEI_TZ = 'Asia/Taipei'
 
 const toTaipeiDateString = (date = new Date()) => {
@@ -605,6 +607,7 @@ router.post('/', requireAuth, async (req, res, next) => {
     }
 
     const viewer = await fetchUserRelation(req.userId).catch(() => null)
+    const elderContextId = resolveElderIdForUser(viewer) ?? req.userId
 
     const commandResult = await maybeHandleElderVoiceCommand({
       transcript,
@@ -641,7 +644,6 @@ router.post('/', requireAuth, async (req, res, next) => {
     let postsForContext = Array.isArray(facebookPosts) ? facebookPosts : []
     if (!postsForContext.length) {
       try {
-        const elderContextId = resolveElderIdForUser(viewer) ?? req.userId
         postsForContext = await getFriendPosts({ limit: 3, elderId: elderContextId })
       } catch (error) {
         if (error.code !== 'FACEBOOK_CONFIG_MISSING') {
@@ -649,6 +651,8 @@ router.post('/', requireAuth, async (req, res, next) => {
         }
       }
     }
+
+    const companionStyles = await fetchCompanionStyleHints(elderContextId)
 
     const normalizedContext = sanitizeContext(context)
     const facebookSummary = summarizeFacebookPosts(postsForContext)
@@ -662,7 +666,8 @@ router.post('/', requireAuth, async (req, res, next) => {
     const reply = await generateChatResponse({
       personaKey: persona,
       message: transcript,
-      context: normalizedContext
+      context: normalizedContext,
+      companionStyles
     })
 
     let replyText = (reply.text ?? '').trim() || '抱歉，我目前想不到合適的回應，請再說一次。'
@@ -685,6 +690,30 @@ router.post('/', requireAuth, async (req, res, next) => {
       encoding: speechConfig.encoding,
       sampleRate: speechConfig.sampleRate
     })
+
+    const elderProfile = await fetchElderProfile(elderContextId).catch(() => null)
+    if (elderProfile) {
+      try {
+        if (transcript && transcript.trim()) {
+          await recordChatEntry({
+            elder: elderProfile,
+            createdBy: req.userId,
+            message: transcript,
+            role: 'user'
+          })
+        }
+        if (replyText && replyText.trim()) {
+          await recordChatEntry({
+            elder: elderProfile,
+            createdBy: req.userId,
+            message: replyText,
+            role: 'ai'
+          })
+        }
+      } catch (styleError) {
+        console.warn('[chat] companion style chat log failed', styleError.message)
+      }
+    }
 
     res.json({
       persona: reply.persona,
@@ -727,3 +756,22 @@ router.post('/classify', async (req, res, next) => {
     next(error)
   }
 })
+const fetchCompanionStyleHints = async (elderId) => {
+  if (!Number.isFinite(elderId)) return []
+  try {
+    const { rows } = await pool.query(
+      `SELECT interest
+       FROM companion_styles
+       WHERE elder_user_id = $1 AND entry_type = 'interest'
+       ORDER BY created_at DESC
+       LIMIT $2`,
+      [elderId, COMPANION_STYLE_LIMIT]
+    )
+    return rows
+      .map((row) => (row.interest || '').toString().trim())
+      .filter(Boolean)
+  } catch (error) {
+    console.warn('[chat] 讀取 companion styles 失敗：', error.message)
+    return []
+  }
+}

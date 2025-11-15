@@ -17,6 +17,8 @@ import familyFeedRouter from './routes/familyFeed.js'
 import friendsRouter from './routes/friends.js'
 import friendEventsRouter from './routes/friendEvents.js'
 import careRouter from './routes/care.js'
+import companionStylesRouter from './routes/companionStyles.js'
+import elderLocationsRouter from './routes/elderLocations.js'
 
 const app = express()
 const __filename = fileURLToPath(import.meta.url)
@@ -53,6 +55,8 @@ app.use('/api/family-feed', familyFeedRouter)
 app.use('/api/friends', friendsRouter)
 app.use('/api/friend-events', friendEventsRouter)
 app.use('/api/care', careRouter)
+app.use('/api/companion-styles', companionStylesRouter)
+app.use('/api/elder-locations', elderLocationsRouter)
 
 app.use(express.static(frontendDir))
 app.get('*', (req, res, next) => {

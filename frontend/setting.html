@@ -63,8 +63,15 @@
 
       <section class="card" id="home-location-card" aria-labelledby="home-location-title">
         <h2 id="home-location-title">住家位置設定</h2>
-        <p class="helper-text">先選縣市與鄉鎮，再輸入路名，拖曳紅點到住家門口即可。</p>
+        <p class="helper-text">請先選擇長者，再選縣市與鄉鎮，輸入路名後拖曳紅點到住家門口即可。</p>
         <div class="map-form">
+          <div>
+            <label for="homeElderSelect">選擇長者</label>
+            <select id="homeElderSelect">
+              <option value="">取得綁定列表中…</option>
+            </select>
+            <p class="helper-text" id="homeElderStatus">正在取得綁定的長者清單…</p>
+          </div>
           <div>
             <label for="homeCountySelect">縣市</label>
             <select id="homeCountySelect">
@@ -207,295 +214,481 @@
     import {
       initLeafletMap,
       geocodeAddressViaNominatim,
-      getStoredHome,
       saveHome,
       TAIWAN_REGIONS
     } from './assets/js/safety-map.js'
 
     const STORAGE_KEYS = {
-      FAMILY_SHARES: 'ai-companion.pendingFamilyShares'
+      FAMILY_SHARES: 'ai-companion.pendingFamilyShares',
+      LAST_HOME_ELDER: 'ai-companion.lastHomeElderId'
     }
 
     function initHomeLocationCard () {
-    const feedbackEl = document.getElementById('homeFeedback')
-    const storedInfoEl = document.getElementById('homeStoredInfo')
-    const searchBtn = document.getElementById('homeSearchBtn')
-    const saveBtn = document.getElementById('homeSaveBtn')
-    const countySelect = document.getElementById('homeCountySelect')
-    const districtSelect = document.getElementById('homeDistrictSelect')
-    const detailInput = document.getElementById('homeAddressDetail')
+      if (!window.aiCompanion) return
+      const feedbackEl = document.getElementById('homeFeedback')
+      const storedInfoEl = document.getElementById('homeStoredInfo')
+      const searchBtn = document.getElementById('homeSearchBtn')
+      const saveBtn = document.getElementById('homeSaveBtn')
+      const countySelect = document.getElementById('homeCountySelect')
+      const districtSelect = document.getElementById('homeDistrictSelect')
+      const detailInput = document.getElementById('homeAddressDetail')
+      const elderSelect = document.getElementById('homeElderSelect')
+      const elderStatusEl = document.getElementById('homeElderStatus')
+      if (!feedbackEl || !storedInfoEl || !elderSelect || !elderStatusEl) return
 
-    let previewMarker = null
-    let latestResult = null
-    let resolvedLocation = null
-    let isSearching = false
-    let lastSearchTs = 0
-    const SEARCH_GAP_MS = 1000
+      const LAST_ELDER_KEY = STORAGE_KEYS.LAST_HOME_ELDER
+      const { map, L } = initLeafletMap('home-map')
 
-    const { map, L } = initLeafletMap('home-map')
+      let previewMarker = null
+      let latestResult = null
+      let resolvedLocation = null
+      let isSearching = false
+      let lastSearchTs = 0
+      let selectedElderId = null
+      let elders = []
+      let elderLocationRequestId = 0
+      const SEARCH_GAP_MS = 1000
 
-    function populateCounties () {
-      const counties = Object.keys(TAIWAN_REGIONS).sort((a, b) => a.localeCompare(b))
-      for (const county of counties) {
-        const option = document.createElement('option')
-        option.value = county
-        option.textContent = county
-        countySelect.appendChild(option)
+      const toNumeric = (value) => {
+        const num = Number(value)
+        return Number.isFinite(num) ? num : null
       }
-    }
 
-    function populateDistricts (county, presetValue) {
-      districtSelect.innerHTML = ''
-      if (!county || !TAIWAN_REGIONS[county]) {
-        districtSelect.disabled = true
-        districtSelect.setAttribute('disabled', 'disabled')
-        const opt = document.createElement('option')
-        opt.value = ''
-        opt.textContent = '請先選擇縣市'
-        districtSelect.appendChild(opt)
-        return
-      }
-      const opt = document.createElement('option')
-      opt.value = ''
-      opt.textContent = '請選擇鄉鎮市區'
-      districtSelect.appendChild(opt)
-
-      const districts = [...TAIWAN_REGIONS[county]].sort((a, b) => a.localeCompare(b))
-      for (const district of districts) {
-        const option = document.createElement('option')
-        option.value = district
-        option.textContent = district
-        districtSelect.appendChild(option)
-      }
-      districtSelect.disabled = false
-      districtSelect.removeAttribute('disabled')
-      if (presetValue && districts.includes(presetValue)) {
-        districtSelect.value = presetValue
-      }
-    }
-
-    populateCounties()
-
-    const existing = getStoredHome()
-    if (existing) {
-      storedInfoEl.textContent = `目前儲存地址：${existing.address}`
-      resolvedLocation = { lat: existing.lat, lon: existing.lon }
-      updateMarkerPosition(existing.lat, existing.lon)
-      map.setView([existing.lat, existing.lon], 15)
-      saveBtn.disabled = false
-      showFeedback('可拖曳紅色圖釘或點擊地圖微調位置後再儲存。')
-
-      const counties = Object.keys(TAIWAN_REGIONS)
-      const matchedCounty = counties.find(county => existing.address.includes(county))
-      if (matchedCounty) {
-        countySelect.value = matchedCounty
-        populateDistricts(matchedCounty)
-        const matchedDistrict = TAIWAN_REGIONS[matchedCounty].find(d => existing.address.includes(d))
-        if (matchedDistrict) {
-          districtSelect.value = matchedDistrict
-          const detailText = existing.address
-            .replace(matchedCounty, '')
-            .replace(matchedDistrict, '')
-            .trim()
-          if (detailText && !detailInput.value) {
-            detailInput.value = detailText
+      const rememberSelection = (elderId) => {
+        try {
+          if (Number.isFinite(elderId)) {
+            window.localStorage?.setItem(LAST_ELDER_KEY, String(elderId))
+          } else {
+            window.localStorage?.removeItem(LAST_ELDER_KEY)
           }
+        } catch (_) {}
+      }
+
+      const readLastSelection = () => {
+        try {
+          const stored = window.localStorage?.getItem(LAST_ELDER_KEY)
+          const num = Number(stored)
+          return Number.isFinite(num) ? num : null
+        } catch (_) {
+          return null
         }
       }
-    } else {
-      storedInfoEl.textContent = '尚未儲存住家地址，請先搜尋後儲存。'
-    }
 
-    function showFeedback (message, variant = 'info') {
-      feedbackEl.textContent = message
-      feedbackEl.hidden = false
-      feedbackEl.classList.toggle('map-feedback--error', variant === 'error')
-    }
+      const getElderDisplayName = (elderIdValue = selectedElderId) => {
+        if (!Number.isFinite(elderIdValue)) return '長者'
+        const match = elders.find((elder) => Number(elder.user_id) === Number(elderIdValue))
+        if (!match) return `長者 #${elderIdValue}`
+        const label = match.full_name || match.username || `User #${match.user_id}`
+        return `${label}（#${match.user_id}）`
+      }
 
-    function clearFeedback () {
-      feedbackEl.hidden = true
-      feedbackEl.textContent = ''
-      feedbackEl.classList.remove('map-feedback--error')
-    }
+      function populateCounties () {
+        const counties = Object.keys(TAIWAN_REGIONS).sort((a, b) => a.localeCompare(b))
+        for (const county of counties) {
+          const option = document.createElement('option')
+          option.value = county
+          option.textContent = county
+          countySelect.appendChild(option)
+        }
+      }
 
-    function onMarkerDragEnd (event) {
-      const { lat, lng } = event.target.getLatLng()
-      resolvedLocation = { lat, lon: lng }
-      saveBtn.disabled = false
-      showFeedback('已更新定位，可繼續拖曳或點擊地圖調整，確認後請按「儲存住家地址」。')
-    }
+      function populateDistricts (county, presetValue) {
+        districtSelect.innerHTML = ''
+        if (!county || !TAIWAN_REGIONS[county]) {
+          districtSelect.disabled = true
+          districtSelect.setAttribute('disabled', 'disabled')
+          const opt = document.createElement('option')
+          opt.value = ''
+          opt.textContent = '請先選擇縣市'
+          districtSelect.appendChild(opt)
+          return
+        }
+        const opt = document.createElement('option')
+        opt.value = ''
+        opt.textContent = '請選擇鄉鎮市區'
+        districtSelect.appendChild(opt)
 
-    function onMapClick (event) {
-      if (!previewMarker) return
-      updateMarkerPosition(event.latlng.lat, event.latlng.lng, { openPopup: false })
-      resolvedLocation = { lat: event.latlng.lat, lon: event.latlng.lng }
-      saveBtn.disabled = false
-      showFeedback('已更新定位，可繼續拖曳或點擊地圖調整，確認後請按「儲存住家地址」。')
-    }
+        const districts = [...TAIWAN_REGIONS[county]].sort((a, b) => a.localeCompare(b))
+        for (const district of districts) {
+          const option = document.createElement('option')
+          option.value = district
+          option.textContent = district
+          districtSelect.appendChild(option)
+        }
+        districtSelect.disabled = false
+        districtSelect.removeAttribute('disabled')
+        if (presetValue && districts.includes(presetValue)) {
+          districtSelect.value = presetValue
+        }
+      }
 
-    function updateMarkerPosition (lat, lon, { openPopup = true } = {}) {
-      if (previewMarker) {
-        previewMarker.off('dragend', onMarkerDragEnd)
-        previewMarker.setLatLng([lat, lon])
-      } else {
-        previewMarker = L.marker([lat, lon], {
-          title: '住家位置',
-          draggable: true,
-          icon: L.divIcon({
-            className: 'home-marker',
-            html: '<span class="home-marker__icon">🏠</span>',
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -28]
-          })
+      const toggleAddressInputs = (enabled) => {
+        const fields = [countySelect, detailInput, searchBtn]
+        fields.forEach((field) => {
+          if (!field) return
+          if (enabled) {
+            field.removeAttribute('disabled')
+          } else {
+            field.setAttribute('disabled', 'disabled')
+          }
         })
-          .addTo(map)
-          .bindPopup('住家位置')
-      }
-      if (openPopup) {
-        previewMarker.openPopup()
-      }
-      previewMarker.on('dragend', onMarkerDragEnd)
-      map.off('click', onMapClick)
-      map.on('click', onMapClick)
-    }
-
-    function removeMarker () {
-      if (previewMarker) {
-        previewMarker.off('dragend', onMarkerDragEnd)
-        map.removeLayer(previewMarker)
-        previewMarker = null
-      }
-      map.off('click', onMapClick)
-      resolvedLocation = null
-    }
-
-    async function handleSearch () {
-      if (isSearching) return
-
-      const now = Date.now()
-      if (now - lastSearchTs < SEARCH_GAP_MS) {
-        showFeedback('請稍候再查詢。')
-        return
+        if (!enabled) {
+          districtSelect.disabled = true
+          districtSelect.setAttribute('disabled', 'disabled')
+        } else if (countySelect.value && TAIWAN_REGIONS[countySelect.value]) {
+          districtSelect.disabled = false
+          districtSelect.removeAttribute('disabled')
+        }
+        saveBtn.disabled = true
       }
 
-      const county = countySelect.value.trim()
-      const district = districtSelect.value.trim()
-      const detail = detailInput.value.trim()
-
-      if (!county) {
-        showFeedback('請先選擇縣市。', 'error')
-        return
-      }
-      if (!district) {
-        showFeedback('請先選擇鄉鎮市區。', 'error')
-        return
-      }
-      if (!detail) {
-        showFeedback('請補充住家詳細地址。', 'error')
-        return
+      const resetAddressFields = () => {
+        countySelect.value = ''
+        populateDistricts('')
+        detailInput.value = ''
+        latestResult = null
+        resolvedLocation = null
+        saveBtn.disabled = true
+        removeMarker()
+        clearFeedback()
       }
 
-      isSearching = true
-      lastSearchTs = now
-      saveBtn.disabled = true
-      showFeedback('正在查詢位置…')
+      populateCounties()
+      toggleAddressInputs(false)
+      storedInfoEl.textContent = '請先選擇要設定的長者。'
 
-      try {
-        const result = await geocodeAddressViaNominatim({ county, district, detail })
-        if (!result) {
-          latestResult = null
-          resolvedLocation = null
-          showFeedback('找不到此地址，請確認後再試。', 'error')
-          removeMarker()
+      function showFeedback (message, variant = 'info') {
+        feedbackEl.textContent = message
+        feedbackEl.hidden = false
+        feedbackEl.classList.toggle('map-feedback--error', variant === 'error')
+      }
+
+      function clearFeedback () {
+        feedbackEl.hidden = true
+        feedbackEl.textContent = ''
+        feedbackEl.classList.remove('map-feedback--error')
+      }
+
+      function onMarkerDragEnd (event) {
+        const { lat, lng } = event.target.getLatLng()
+        resolvedLocation = { lat, lon: lng }
+        saveBtn.disabled = false
+        showFeedback('已更新定位，可繼續拖曳或點擊地圖調整，確認後請按「儲存住家地址」。')
+      }
+
+      function onMapClick (event) {
+        if (!previewMarker) return
+        updateMarkerPosition(event.latlng.lat, event.latlng.lng, { openPopup: false })
+        resolvedLocation = { lat: event.latlng.lat, lon: event.latlng.lng }
+        saveBtn.disabled = false
+        showFeedback('已更新定位，可繼續拖曳或點擊地圖調整，確認後請按「儲存住家地址」。')
+      }
+
+      function updateMarkerPosition (lat, lon, { openPopup = true } = {}) {
+        if (previewMarker) {
+          previewMarker.off('dragend', onMarkerDragEnd)
+          previewMarker.setLatLng([lat, lon])
+        } else {
+          previewMarker = L.marker([lat, lon], {
+            title: '住家位置',
+            draggable: true,
+            icon: L.divIcon({
+              className: 'home-marker',
+              html: '<span class="home-marker__icon">🏠</span>',
+              iconAnchor: [16, 32],
+              popupAnchor: [0, -28]
+            })
+          })
+            .addTo(map)
+            .bindPopup('住家位置')
+        }
+        if (openPopup) {
+          previewMarker.openPopup()
+        }
+        previewMarker.on('dragend', onMarkerDragEnd)
+        map.off('click', onMapClick)
+        map.on('click', onMapClick)
+      }
+
+      function removeMarker () {
+        if (previewMarker) {
+          previewMarker.off('dragend', onMarkerDragEnd)
+          map.removeLayer(previewMarker)
+          previewMarker = null
+        }
+        map.off('click', onMapClick)
+        resolvedLocation = null
+      }
+
+      async function fetchElderLocation (elderId) {
+        if (!window.aiCompanion?.fetchJson) return null
+        try {
+          const res = await window.aiCompanion.fetchJson(`/elder-locations/${elderId}`)
+          return res?.location ?? null
+        } catch (error) {
+          if (typeof error?.message === 'string' && error.message.includes('(404)')) {
+            return null
+          }
+          throw error
+        }
+      }
+
+      async function hydrateExistingLocation (elderId) {
+        elderLocationRequestId += 1
+        const requestId = elderLocationRequestId
+        const elderLabel = getElderDisplayName(elderId)
+        try {
+          const location = await fetchElderLocation(elderId)
+          if (requestId !== elderLocationRequestId) return
+          if (!location) {
+            storedInfoEl.textContent = `${elderLabel} 尚未儲存住家地址，請完成下方設定。`
+            elderStatusEl.textContent = `請完成 ${elderLabel} 的住家地址設定。`
+            resetAddressFields()
+            return
+          }
+          const storedCounty = location.county || ''
+          countySelect.value = storedCounty
+          populateDistricts(storedCounty, location.district || '')
+          detailInput.value = location.detail || ''
+          resolvedLocation = { lat: location.latitude, lon: location.longitude }
+          updateMarkerPosition(location.latitude, location.longitude)
+          map.setView([location.latitude, location.longitude], 15)
+          saveBtn.disabled = true
+          storedInfoEl.textContent = `${elderLabel} 目前儲存地址：${location.address}`
+          elderStatusEl.textContent = `如需更新 ${elderLabel} 的住家地址，可重新查詢後儲存。`
+        } catch (error) {
+          if (requestId !== elderLocationRequestId) return
+          console.error('Load elder location failed', error)
+          storedInfoEl.textContent = `${elderLabel} 的住家資料載入失敗。`
+          showFeedback('無法取得儲存的住家地址，請稍後再試。', 'error')
+        }
+      }
+
+      async function handleElderChange () {
+        resetAddressFields()
+        const selectedValue = toNumeric(elderSelect.value)
+        if (!selectedValue) {
+          selectedElderId = null
+          rememberSelection(null)
+          storedInfoEl.textContent = '請先選擇要設定的長者。'
+          elderStatusEl.textContent = '請在下方綁定長者，或從清單中選擇。'
+          toggleAddressInputs(false)
+          return
+        }
+        selectedElderId = selectedValue
+        rememberSelection(selectedValue)
+        toggleAddressInputs(true)
+        storedInfoEl.textContent = `正在載入 ${getElderDisplayName()} 的住家地址…`
+        await hydrateExistingLocation(selectedValue)
+      }
+
+      async function loadLinkedElders () {
+        if (!window.aiCompanion?.fetchJson) {
+          elderStatusEl.textContent = '系統尚未就緒，請稍後再試。'
+          toggleAddressInputs(false)
+          return
+        }
+        elderSelect.innerHTML = '<option value="">載入中…</option>'
+        elderStatusEl.textContent = '正在取得綁定的長者…'
+        try {
+          const res = await window.aiCompanion.fetchJson('/users/linked-elder')
+          elders = Array.isArray(res?.elders) ? res.elders : []
+          if (!elders.length) {
+            elderSelect.innerHTML = '<option value="">尚未綁定長者</option>'
+            elderStatusEl.textContent = '尚未綁定長者，請先在下方完成「長者帳號連結」。'
+            toggleAddressInputs(false)
+            storedInfoEl.textContent = '綁定長者後即可設定住家地址。'
+            return
+          }
+          elderSelect.innerHTML = '<option value="">請選擇長者</option>'
+          elders.forEach((elder) => {
+            const option = document.createElement('option')
+            option.value = elder.user_id
+            const label = elder.full_name || elder.username || `User #${elder.user_id}`
+            option.textContent = `${label}（#${elder.user_id}）`
+            elderSelect.appendChild(option)
+          })
+          const lastSelection = readLastSelection()
+          if (lastSelection && elders.some((elder) => Number(elder.user_id) === lastSelection)) {
+            elderSelect.value = String(lastSelection)
+            await handleElderChange()
+          } else {
+            storedInfoEl.textContent = '請先選擇要設定的長者。'
+            toggleAddressInputs(false)
+          }
+          elderStatusEl.textContent = '請選擇要設定住址的長者。'
+        } catch (error) {
+          console.error('Load elder list failed', error)
+          elderSelect.innerHTML = '<option value="">載入失敗</option>'
+          elderStatusEl.textContent = '無法取得長者清單，請稍後再試。'
+          toggleAddressInputs(false)
+        }
+      }
+
+      async function handleSearch () {
+        if (!selectedElderId) {
+          showFeedback('請先選擇要設定的長者。', 'error')
+          return
+        }
+        if (isSearching) return
+
+        const now = Date.now()
+        if (now - lastSearchTs < SEARCH_GAP_MS) {
+          showFeedback('請稍候再查詢。')
           return
         }
 
-        latestResult = result
-        resolvedLocation = { lat: result.lat, lon: result.lon }
-        clearFeedback()
-        showFeedback(`已找到：${result.displayName}
+        const county = countySelect.value.trim()
+        const district = districtSelect.value.trim()
+        const detail = detailInput.value.trim()
+
+        if (!county) {
+          showFeedback('請先選擇縣市。', 'error')
+          return
+        }
+        if (!district) {
+          showFeedback('請先選擇鄉鎮市區。', 'error')
+          return
+        }
+        if (!detail) {
+          showFeedback('請補充住家詳細地址。', 'error')
+          return
+        }
+
+        isSearching = true
+        lastSearchTs = now
+        saveBtn.disabled = true
+        showFeedback('正在查詢位置…')
+
+        try {
+          const result = await geocodeAddressViaNominatim({ county, district, detail })
+          if (!result) {
+            latestResult = null
+            resolvedLocation = null
+            showFeedback('找不到此地址，請確認後再試。', 'error')
+            removeMarker()
+            return
+          }
+
+          latestResult = result
+          resolvedLocation = { lat: result.lat, lon: result.lon }
+          clearFeedback()
+          showFeedback(`已找到：${result.displayName}
 請確認地圖位置，可拖曳或點擊地圖微調後再儲存。`)
-        updateMarkerPosition(result.lat, result.lon)
-        map.setView([result.lat, result.lon], 16)
-        saveBtn.disabled = false
-        saveBtn.focus()
-      } catch (error) {
-        console.error('Home geocode failed', error)
+          updateMarkerPosition(result.lat, result.lon)
+          map.setView([result.lat, result.lon], 16)
+          saveBtn.disabled = false
+          saveBtn.focus()
+        } catch (error) {
+          console.error('Home geocode failed', error)
+          latestResult = null
+          resolvedLocation = null
+          showFeedback('查詢失敗，請稍後再試。', 'error')
+          removeMarker()
+        } finally {
+          isSearching = false
+        }
+      }
+
+      async function handleSave () {
+        if (!selectedElderId) {
+          showFeedback('請先選擇要設定的長者。', 'error')
+          return
+        }
+        const county = countySelect.value.trim()
+        const district = districtSelect.value.trim()
+        const detail = detailInput.value.trim()
+
+        if (!county || !district || !detail) {
+          showFeedback('請先完成地址選擇與查詢。', 'error')
+          return
+        }
+
+        const coords = resolvedLocation ?? (latestResult
+          ? { lat: latestResult.lat, lon: latestResult.lon }
+          : null)
+        if (!coords) {
+          showFeedback('請先在地圖上確認住家位置。', 'error')
+          return
+        }
+
+        if (!window.aiCompanion?.fetchJson) {
+          showFeedback('系統尚未就緒，請稍後再試。', 'error')
+          return
+        }
+
+        try {
+          const formattedAddress = `${county}${district}${detail}`
+          await window.aiCompanion.fetchJson(`/elder-locations/${selectedElderId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              address: formattedAddress,
+              lat: coords.lat,
+              lon: coords.lon,
+              county,
+              district,
+              detail
+            })
+          })
+          saveHome({
+            address: formattedAddress,
+            lat: coords.lat,
+            lon: coords.lon
+          })
+          storedInfoEl.textContent = `${getElderDisplayName()} 目前儲存地址：${formattedAddress}`
+          showFeedback('已儲存住家地址。')
+          saveBtn.disabled = true
+          if (window.showToast) {
+            window.showToast('已儲存住家地址。', { variant: 'success' })
+          }
+        } catch (error) {
+          console.error('Save elder location failed', error)
+          showFeedback('儲存住家地址失敗，請稍後再試。', 'error')
+        }
+      }
+
+      elderSelect?.addEventListener('change', () => {
+        handleElderChange()
+      })
+
+      countySelect.addEventListener('change', () => {
+        if (!selectedElderId) return
+        populateDistricts(countySelect.value)
+        districtSelect.value = ''
+        detailInput.value = ''
+        saveBtn.disabled = true
         latestResult = null
         resolvedLocation = null
-        showFeedback('查詢失敗，請稍後再試。', 'error')
         removeMarker()
-      } finally {
-        isSearching = false
-      }
-    }
+        clearFeedback()
+      })
 
-    async function handleSave () {
-      const county = countySelect.value.trim()
-      const district = districtSelect.value.trim()
-      const detail = detailInput.value.trim()
-
-      if (!county || !district || !detail) {
-        showFeedback('請先完成地址選擇與查詢。', 'error')
-        return
-      }
-
-      const coords = resolvedLocation ?? (latestResult
-        ? { lat: latestResult.lat, lon: latestResult.lon }
-        : null)
-      if (!coords) {
-        showFeedback('請先在地圖上確認住家位置。', 'error')
-        return
-      }
-
-      try {
-        const formattedAddress = `${county}${district}${detail}`
-        saveHome({
-          address: formattedAddress,
-          lat: coords.lat,
-          lon: coords.lon
-        })
-        storedInfoEl.textContent = `目前儲存地址：${formattedAddress}`
-        showFeedback('已儲存住家地址。')
+      districtSelect.addEventListener('change', () => {
+        if (!selectedElderId) return
+        detailInput.value = ''
         saveBtn.disabled = true
-        if (window.showToast) {
-          window.showToast('已儲存住家地址。', { variant: 'success' })
-        }
-      } catch (error) {
-        console.error('Save home failed', error)
-        showFeedback('儲存住家地址失敗，請稍後再試。', 'error')
-      }
-    }
+        latestResult = null
+        resolvedLocation = null
+        removeMarker()
+        clearFeedback()
+      })
 
-    countySelect.addEventListener('change', () => {
-      populateDistricts(countySelect.value)
-      districtSelect.value = ''
-      detailInput.value = ''
-      saveBtn.disabled = true
-      latestResult = null
-      resolvedLocation = null
-      removeMarker()
-      clearFeedback()
-    })
+      detailInput.addEventListener('input', () => {
+        if (!selectedElderId) return
+        saveBtn.disabled = true
+        latestResult = null
+        resolvedLocation = null
+        removeMarker()
+        clearFeedback()
+      })
+      searchBtn.addEventListener('click', () => {
+        handleSearch()
+      })
+      saveBtn.addEventListener('click', () => {
+        handleSave()
+      })
 
-    districtSelect.addEventListener('change', () => {
-      detailInput.value = ''
-      saveBtn.disabled = true
-      latestResult = null
-      resolvedLocation = null
-      removeMarker()
-      clearFeedback()
-    })
-
-    detailInput.addEventListener('input', () => {
-      saveBtn.disabled = true
-      latestResult = null
-      resolvedLocation = null
-      removeMarker()
-      clearFeedback()
-    })
-    searchBtn.addEventListener('click', handleSearch)
-    saveBtn.addEventListener('click', handleSave)
+      loadLinkedElders()
     }
 
     function hideHomeLocationCard () {

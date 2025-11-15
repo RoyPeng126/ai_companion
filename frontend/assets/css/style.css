@@ -315,6 +315,12 @@ footer {
   fill: currentColor;
 }
 
+.btn.btn-sm {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+  border-radius: 12px;
+}
+
 .btn.primary {
   background: #fff;
   color: var(--primary);
@@ -325,6 +331,17 @@ footer {
   background: rgba(255, 255, 255, 0.25);
   color: #fff;
   border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.interest-history__toggle {
+  background: #fff5f5;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.interest-history__toggle:hover {
+  background: #ffe4e4;
+  color: #9f1239;
 }
 
 .btn.icon-only {

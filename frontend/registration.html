@@ -168,6 +168,13 @@
         return text
       }
 
+      const resolveGender = (value = '') => {
+        const text = String(value).trim().toLowerCase()
+        if (text === 'grandpa') return 'm'
+        if (text === 'grandma') return 'f'
+        return ''
+      }
+
       const userRole=document.getElementById('userRole')
       const avatarInner=document.getElementById('avatarInner')
       const avatarCircle=document.querySelector('.avatar-circle')
@@ -257,6 +264,10 @@
           full_name: nickname || null,
           role: normalizedRole,
           charactor: normalizedRole
+        }
+        const resolvedGender = resolveGender(role || storedRole || '')
+        if (resolvedGender) {
+          payload.gender = resolvedGender
         }
         if(elderMode){
           payload.phone=phone

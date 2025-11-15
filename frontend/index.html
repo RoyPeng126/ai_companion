@@ -40,9 +40,7 @@
       </button>
       <nav id="site-nav" class="nav-links" data-menu>
         <a href="index.html" aria-current="page">首頁</a>
-        <a href="selection.html">陪伴設定</a>
         <a href="ranking.html">健康排行榜</a>
-        <a href="forum.html">社群公園</a>
         <a href="guide.html">離線幫助指南</a>
       </nav>
       <div class="user-menu" id="userMenu" aria-label="使用者選單">
@@ -142,6 +140,34 @@
               </div>
             </div>
             <p class="helper-text">按下「開始錄音」說出想提醒的事，系統可轉成備忘錄，並由 AI 夥伴語音回覆。</p>
+
+            <div class="interest-panel" id="interest-card" aria-labelledby="interest-card-title">
+              <h4 id="interest-card-title">興趣話題收藏</h4>
+              <p class="helper-text">直接在此頁語音或輸入長者喜歡的主題，AI 夥伴會把它當作聊天風格參考。</p>
+              <div class="interest-meta">
+                <p>目前設定長者：<strong id="interest-elder-name">載入中...</strong></p>
+              </div>
+              <div class="interest-inputs">
+                <label for="interestText">有興趣的話題</label>
+                <textarea id="interestText" rows="2" placeholder="例如：懷舊歌曲、園藝、孫子趣事"></textarea>
+                <div class="interest-actions">
+                  <button class="btn secondary" type="button" id="interest-record-btn">語音輸入</button>
+                  <button class="btn primary" type="button" id="interest-save-btn">儲存興趣</button>
+                </div>
+                <p class="helper-text" id="interestStatus">可按下「語音輸入」說出想聊的話題，系統會自動轉成文字並儲存。</p>
+              </div>
+              <div class="interest-list">
+                <h5>已收藏的興趣</h5>
+                <ul id="interestList" aria-live="polite"></ul>
+              </div>
+              <div class="interest-history">
+                <div class="interest-history__header">
+                  <h5>歷史聊天記錄</h5>
+                  <button class="btn secondary btn-sm interest-history__toggle" type="button" id="interestHistoryToggle" aria-expanded="false">展開</button>
+                </div>
+                <ul id="interestChatHistory" aria-live="polite" hidden></ul>
+              </div>
+            </div>
           </div>
         </article>
         <article class="card friend-forum-card" data-friend-forum aria-live="polite">
@@ -210,7 +236,6 @@
           </div>
           <div class="friend-forum__empty" data-friend-forum-empty hidden>
             <p>此區塊僅提供長輩帳號使用。請協助長輩分享手機與 User ID，讓好友可以加入。</p>
-            <a class="btn secondary" href="forum.html">前往社群公園</a>
           </div>
         </article>
         <article class="card facebook-feed-card" data-facebook-feed>
@@ -224,6 +249,7 @@
           <p class="helper-text" id="facebook-feed-status">僅顯示主動授權的家人、粉絲專頁與手動分享內容，安全又合規。</p>
         </article>
       </section>
+
     </main>
 
     <footer>
@@ -261,6 +287,7 @@
     <script src="assets/js/friend-forum.js"></script>
     <script src="assets/js/settings.js"></script>
     <script src="assets/js/chat.js"></script>
+    <script src="assets/js/companion-style.js"></script>
     <script src="assets/js/reminders.js"></script>
     <script src="assets/js/reminder-policies.js"></script>
     <script src="assets/js/care-elder-invitations.js"></script>
