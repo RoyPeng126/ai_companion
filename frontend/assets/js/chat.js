@@ -2,6 +2,7 @@
 
 (function () {
   const MEMO_STORAGE_KEY = "ai-companion.voiceMemos";
+  const CHAT_TIMEZONE = "Asia/Taipei";
   const MAX_CONTEXT_MESSAGES = 10;
   const MAX_MEMOS = 20;
   const AVATARS = {
@@ -249,12 +250,63 @@
   })();
 
   // ==== Reminders helpers (text/voice to user_events) ====
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  const formatTaipeiYmd = (date) => {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: CHAT_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date);
+  };
+
   const tzToday = () => {
     try {
-      const tz = 'Asia/Taipei';
-      const now = new Date();
-      return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(now);
-    } catch { return new Date().toISOString().slice(0,10) }
+      return formatTaipeiYmd(new Date());
+    } catch {
+      return new Date().toISOString().slice(0, 10);
+    }
+  };
+
+  const startOfTaipeiDay = () => {
+    const ymd = tzToday();
+    return new Date(`${ymd}T00:00:00+08:00`);
+  };
+
+  const detectDateFromText = (text = "") => {
+    const normalized = text.replace(/\s+/g, "");
+    if (!normalized) return "";
+    const base = startOfTaipeiDay();
+
+    if (normalized.includes("後天")) {
+      return formatTaipeiYmd(new Date(base.getTime() + 2 * DAY_MS));
+    }
+    if (normalized.includes("明天")) {
+      return formatTaipeiYmd(new Date(base.getTime() + DAY_MS));
+    }
+    if (normalized.includes("今天")) {
+      return formatTaipeiYmd(base);
+    }
+    if (normalized.includes("昨天")) {
+      return formatTaipeiYmd(new Date(base.getTime() - DAY_MS));
+    }
+
+    const mdMatch = normalized.match(/(\d{1,2})(?:月|\/|\.|-)(\d{1,2})(?:日|號)?/);
+    if (mdMatch) {
+      const month = Number(mdMatch[1]);
+      const day = Number(mdMatch[2]);
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        let year = base.getFullYear();
+        const candidate = new Date(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T00:00:00+08:00`);
+        if (candidate.getTime() < base.getTime()) {
+          year += 1;
+        }
+        const adjusted = new Date(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T00:00:00+08:00`);
+        return formatTaipeiYmd(adjusted);
+      }
+    }
+    return "";
   };
 
   const openReminderDialog = (defaults) => {
@@ -1239,7 +1291,7 @@
             if (resp.ok) {
               classifyData = await resp.json();
               if (classifyData && typeof classifyData.time === 'string' && classifyData.time.trim()) {
-                const ymd = (classifyData.date && typeof classifyData.date === 'string' && classifyData.date.trim()) ? classifyData.date.trim() : startIso.slice(0,10);
+                const ymd = (classifyData.date && typeof classifyData.date === 'string' && classifyData.date.trim()) ? classifyData.date.trim() : (startIso ? startIso.slice(0,10) : detectDateFromText(latest) || tzToday());
                 startIso = `${ymd}T${classifyData.time.trim()}:00+08:00`;
                 remindIso = startIso;
               }
@@ -1268,6 +1320,15 @@
               }
             }
           } catch (_) { /* ignore, fallback below */ }
+
+          const fallbackDate = detectDateFromText(latest);
+          if (fallbackDate && (!classifyData || !classifyData.date)) {
+            const fallbackTime = (classifyData && classifyData.time && classifyData.time.trim())
+              ? classifyData.time.trim()
+              : (startIso ? startIso.slice(11,16) : (parsed.time || '09:00'));
+            startIso = `${fallbackDate}T${fallbackTime}:00+08:00`;
+            remindIso = startIso;
+          }
 
           // Sync parsed with LLM-merged values
           try { parsed.startIso = startIso; parsed.category = categoryForSave; } catch(_){}

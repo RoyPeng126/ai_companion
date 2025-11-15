@@ -61,6 +61,7 @@ const summarizeFacebookPosts = (posts = []) => {
 const FRIEND_LIMIT = 10
 const COMPANION_STYLE_LIMIT = 5
 const TAIPEI_TZ = 'Asia/Taipei'
+const eventWizardSessions = new Map()
 
 const toTaipeiDateString = (date = new Date()) => {
   const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -112,6 +113,58 @@ const extractLocationFromText = (text = '') => {
   const match = text.match(/(?:在|到|去)\s*([\u4e00-\u9fa5A-Za-z0-9\s]{1,20})/)
   if (match) return match[1].trim()
   return ''
+}
+
+const TAIPEI_DAY_MS = 24 * 60 * 60 * 1000
+
+const getTaipeiStartOfDay = (reference = new Date()) => {
+  const ymd = toTaipeiDateString(reference)
+  return new Date(`${ymd}T00:00:00+08:00`)
+}
+
+const formatTaipeiYmd = (date) => {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: TAIPEI_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date)
+}
+
+const detectDateFromText = (text = '') => {
+  if (!text) return null
+  const normalized = text.replace(/\s+/g, '')
+  const base = getTaipeiStartOfDay()
+  const format = (date) => formatTaipeiYmd(date)
+
+  if (normalized.includes('後天')) {
+    return format(new Date(base.getTime() + 2 * TAIPEI_DAY_MS))
+  }
+  if (normalized.includes('明天')) {
+    return format(new Date(base.getTime() + TAIPEI_DAY_MS))
+  }
+  if (normalized.includes('今天')) {
+    return format(base)
+  }
+  if (normalized.includes('昨天')) {
+    return format(new Date(base.getTime() - TAIPEI_DAY_MS))
+  }
+
+  const mdMatch = normalized.match(/(\d{1,2})(?:月|\/|\.|-)(\d{1,2})(?:日|號)?/)
+  if (mdMatch) {
+    const month = Number(mdMatch[1])
+    const day = Number(mdMatch[2])
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      let year = base.getFullYear()
+      const candidate = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00+08:00`)
+      if (candidate.getTime() < base.getTime()) {
+        year += 1
+      }
+      const adjusted = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00+08:00`)
+      return formatTaipeiYmd(adjusted)
+    }
+  }
+  return null
 }
 
 const digitsFromText = (text = '') => {
@@ -233,7 +286,8 @@ const buildProactiveNote = async (userId) => {
 
 const handleCreateReminder = async (text, userId) => {
   const parsed = await classifyReminder({ rawText: text, tz: TAIPEI_TZ }).catch(() => ({}))
-  const dateStr = parsed.date || toTaipeiDateString()
+  const detectedDate = parsed.date || detectDateFromText(text)
+  const dateStr = detectedDate || toTaipeiDateString()
   const timeStr = parsed.time || '09:00'
   const startIso = toTaipeiIso(dateStr, timeStr)
   const title = (parsed.title || '生活提醒').slice(0, 60)
@@ -260,6 +314,183 @@ const handleCreateReminder = async (text, userId) => {
   const humanTime = formatTaipeiDateTime(startIso)
   return `好的，我已經幫你記下提醒：「${title}」，時間在 ${humanTime}。`
 }
+
+const parseEventDetails = async (input, previous = {}) => {
+  const parsed = await classifyReminder({ rawText: input, tz: TAIPEI_TZ }).catch(() => ({}))
+  const title = (parsed.title || previous.title || '').trim()
+  const detectedDate = parsed.date || detectDateFromText(input) || previous.date || ''
+  const date = detectedDate
+  const time = parsed.time || previous.time || ''
+  const location = (parsed.location || extractLocationFromText(input) || previous.location || '').trim()
+  const description = (parsed.description || previous.description || '').trim()
+  const startIso = date && time ? toTaipeiIso(date, time) : previous.startIso || null
+  return { title, date, time, location, description, startIso }
+}
+
+const createFriendForumEvent = async ({ userId, details }) => {
+  const title = (details.title || '好友活動').slice(0, 60)
+  const description = details.description || '好友邀請活動'
+  const startIso =
+    details.startIso || (details.date && details.time ? toTaipeiIso(details.date, details.time) : null)
+  if (!startIso) {
+    throw new Error('missing_event_time')
+  }
+  const location = details.location ? details.location.trim() : null
+
+  const insert = await pool.query(
+    `INSERT INTO elder_friend_events (host_user_id, title, description, start_time, location)
+     VALUES ($1,$2,$3,$4,$5)
+     RETURNING event_id`,
+    [userId, title, description, startIso, location]
+  )
+  const eventId = insert.rows[0].event_id
+
+  await pool.query(
+    `INSERT INTO elder_friend_event_participants (event_id, user_id, status)
+     VALUES ($1,$2,'going')
+     ON CONFLICT (event_id, user_id) DO NOTHING`,
+    [eventId, userId]
+  )
+
+  const friendIds = await fetchFriendIds(userId)
+  let invited = 0
+  if (friendIds.length) {
+    const inviteSql = `
+      INSERT INTO elder_friend_event_participants (event_id, user_id, status)
+      VALUES ($1,$2,'invited')
+      ON CONFLICT (event_id, user_id)
+      DO UPDATE SET status = EXCLUDED.status, updated_at = now()
+    `
+    for (const fid of friendIds) {
+      await pool.query(inviteSql, [eventId, fid])
+      invited += 1
+    }
+  }
+
+  return {
+    eventId,
+    title,
+    startIso,
+    location,
+    invitedCount: invited
+  }
+}
+
+const createReminderFromEvent = async ({ userId, details }) => {
+  const startIso =
+    details.startIso || (details.date && details.time ? toTaipeiIso(details.date, details.time) : null)
+  if (!startIso) {
+    throw new Error('missing_reminder_time')
+  }
+  const title = (details.title || '好友活動').slice(0, 60)
+  const location = details.location ? details.location.trim() : null
+  await pool.query(
+    `INSERT INTO user_events
+       (user_id, owner_user_id, title, description, start_time, end_time, reminder_time, location, category, status)
+     VALUES ($1,$1,$2,$3,$4,$5,$4,$6,$7,false)`,
+    [
+      userId,
+      title,
+      details.description || '好友活動提醒',
+      startIso,
+      startIso,
+      location,
+      'friend_event'
+    ]
+  )
+}
+
+const beginEventWizard = async ({ userId, initialInput }) => {
+  eventWizardSessions.set(userId, { stage: 'await_details', details: {} })
+  if (!initialInput || !initialInput.trim()) {
+    return '好的，我們來發起一場活動。請先告訴我活動名稱、日期與時間，如果有地點也一起說。'
+  }
+  return continueEventWizard({ userId, transcript: initialInput })
+}
+
+const continueEventWizard = async ({ userId, transcript }) => {
+  const session = eventWizardSessions.get(userId)
+  if (!session) return null
+
+  const trimmed = (transcript || '').trim()
+  const normalized = trimmed.replace(/\s+/g, '')
+
+  if (normalized.includes('取消') || normalized.includes('先不用')) {
+    eventWizardSessions.delete(userId)
+    return '好的，已經為你取消這次的活動建立流程，有需要再叫我。'
+  }
+
+  if (session.stage === 'await_details') {
+    if (!trimmed) {
+      return '請跟我說活動的名稱、日期時間與地點，這樣我才能幫你記錄。'
+    }
+    const details = await parseEventDetails(trimmed, session.details || {})
+    session.details = details
+    eventWizardSessions.set(userId, session)
+    const missing = []
+    if (!details.title) missing.push('活動名稱')
+    if (!details.date) missing.push('日期')
+    if (!details.time) missing.push('時間')
+    if (missing.length) {
+      return `目前還缺少 ${missing.join('、')}，請再補充一次。`
+    }
+    if (!details.startIso) {
+      return '我沒有聽懂活動的時間，請再說一次日期與時間。'
+    }
+    session.stage = 'await_confirm'
+    eventWizardSessions.set(userId, session)
+    const whenText = formatTaipeiDateTime(details.startIso)
+    const locationText = details.location ? `，地點在 ${details.location}` : '（地點尚未設定）'
+    return `這場活動叫做「${details.title}」，時間是 ${whenText}${locationText}。請說「確認活動」開始邀請好友，或說「我要修改」重新提供資料。`
+  }
+
+  if (session.stage === 'await_confirm') {
+    if (normalized.includes('修改')) {
+      session.stage = 'await_details'
+      eventWizardSessions.set(userId, session)
+      return '沒問題，我們重新調整，請再次告訴我活動名稱、日期、時間或地點。'
+    }
+    const confirmKeywords = ['確認', '好', '可以', '沒問題', 'ＯＫ', 'OK']
+    const isConfirm = confirmKeywords.some(keyword => normalized.includes(keyword))
+    if (!isConfirm) {
+      return '準備好後請說「確認活動」，或說「取消」離開。'
+    }
+    try {
+      const eventInfo = await createFriendForumEvent({ userId, details: session.details })
+      session.stage = 'await_reminder_choice'
+      eventWizardSessions.set(userId, session)
+      const timeText = formatTaipeiDateTime(eventInfo.startIso)
+      const locationText = eventInfo.location ? `，地點在 ${eventInfo.location}` : ''
+      return `活動「${eventInfo.title}」已建立，時間 ${timeText}${locationText}，我也邀請了好友們。要不要把這個活動加到備忘錄提醒裡？請回答「要」或「不要」。`
+    } catch (error) {
+      eventWizardSessions.delete(userId)
+      console.error('[event wizard] create event failed', error)
+      return '建立活動時出了點問題，稍後再試試看。'
+    }
+  }
+
+  if (session.stage === 'await_reminder_choice') {
+    if (/不要|不用|否/.test(normalized)) {
+      eventWizardSessions.delete(userId)
+      return '了解，不會放進備忘錄。活動資訊已經同步到好友論壇。'
+    }
+    if (/要|好|加/.test(normalized)) {
+      try {
+        await createReminderFromEvent({ userId, details: session.details })
+        eventWizardSessions.delete(userId)
+        return '已把這個活動加入備忘錄，到時候會再提醒你。'
+      } catch (error) {
+        eventWizardSessions.delete(userId)
+        console.error('[event wizard] reminder failed', error)
+        return '活動已建立，但新增備忘錄失敗，稍後再試一次。'
+      }
+    }
+    return '這個活動要不要同步到備忘錄提醒？請說「要」或「不要」。'
+  }
+
+  return null
+}
+
 
 const handleAddFriend = async (text, userId) => {
   const digits = digitsFromText(text)
@@ -383,45 +614,29 @@ const updateActivityInvite = async (userId, intent, index) => {
 
 const handleCreateActivity = async (text, userId) => {
   const parsed = await classifyReminder({ rawText: text, tz: TAIPEI_TZ }).catch(() => ({}))
-  const dateStr = parsed.date || toTaipeiDateString()
-  const timeStr = parsed.time || '10:00'
-  const startIso = toTaipeiIso(dateStr, timeStr)
-  if (!startIso) {
+  const details = {
+    title: (parsed.title || '好友活動').slice(0, 60),
+    date: parsed.date || detectDateFromText(text) || '',
+    time: parsed.time || '',
+    location: parsed.location || extractLocationFromText(text) || '',
+    description: parsed.description || '好友邀請活動',
+    startIso: null
+  }
+  if (details.date && details.time) {
+    details.startIso = toTaipeiIso(details.date, details.time)
+  }
+  if (!details.startIso) {
     return '我沒有聽懂活動時間，請再說一次日期與時間。'
   }
-  const title = (parsed.title || '好友活動').slice(0, 60)
-  const location = parsed.location || extractLocationFromText(text) || null
-  const description = parsed.description || '好友邀請活動'
-
-  const insert = await pool.query(
-    `INSERT INTO elder_friend_events (host_user_id, title, description, start_time, location)
-     VALUES ($1,$2,$3,$4,$5)
-     RETURNING event_id`,
-    [userId, title, description, startIso, location]
-  )
-  const eventId = insert.rows[0].event_id
-  await pool.query(
-    `INSERT INTO elder_friend_event_participants (event_id, user_id, status)
-     VALUES ($1,$2,'going')
-     ON CONFLICT (event_id, user_id) DO NOTHING`,
-    [eventId, userId]
-  )
-
-  const friendIds = await fetchFriendIds(userId)
-  if (friendIds.length) {
-    const inviteSql = `
-      INSERT INTO elder_friend_event_participants (event_id, user_id, status)
-      VALUES ($1,$2,'invited')
-      ON CONFLICT (event_id, user_id)
-      DO UPDATE SET status = EXCLUDED.status, updated_at = now()
-    `
-    for (const fid of friendIds) {
-      await pool.query(inviteSql, [eventId, fid])
-    }
+  try {
+    const eventInfo = await createFriendForumEvent({ userId, details })
+    const when = formatTaipeiDateTime(eventInfo.startIso)
+    const locationText = eventInfo.location ? `，地點 ${eventInfo.location}` : ''
+    return `已經幫你建立「${eventInfo.title}」，時間在 ${when}${locationText}，我也通知好友囉。`
+  } catch (error) {
+    console.error('[handleCreateActivity] failed', error)
+    return '建立活動時出了點狀況，稍後再試試看。'
   }
-
-  const when = formatTaipeiDateTime(startIso)
-  return `已經幫你建立「${title}」，時間在 ${when}${location ? `，地點 ${location}` : ''}，我也通知好友囉。`
 }
 
 const handleViewReminders = async (userId) => {
@@ -474,7 +689,17 @@ const maybeHandleElderVoiceCommand = async ({ transcript, viewer, userId }) => {
   if (!compact) return null
 
   const normalized = compact.replace(/\s+/g, '')
-  const lower = compact.toLowerCase()
+  if (normalized.startsWith('我要發起活動')) {
+    const remainder = compact.replace(/^我要發起活動/, '').trim()
+    const responseText = await beginEventWizard({ userId, initialInput: remainder })
+    return { responseText }
+  }
+
+  const wizardSession = eventWizardSessions.get(userId)
+  if (wizardSession) {
+    const responseText = await continueEventWizard({ userId, transcript: compact })
+    return { responseText }
+  }
 
   if (normalized.includes('我要加好友')) {
     const responseText = await handleAddFriend(compact, userId)
@@ -536,11 +761,6 @@ const maybeHandleElderVoiceCommand = async ({ transcript, viewer, userId }) => {
       index = numMap[token] ?? Number(token)
     }
     const responseText = await updateActivityInvite(userId, 'decline', index)
-    return { responseText }
-  }
-
-  if (normalized.includes('我要發起活動')) {
-    const responseText = await handleCreateActivity(compact.replace('我要發起活動', ''), userId)
     return { responseText }
   }
 

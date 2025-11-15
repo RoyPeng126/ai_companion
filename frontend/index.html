@@ -418,13 +418,28 @@
   <script>
     (function initToday(){
       const TAIPEI_TZ = 'Asia/Taipei'
-      function todayRangeInTaipei(){ const now = new Date(); const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: TAIPEI_TZ, year:'numeric', month:'2-digit', day:'2-digit' }).format(now); const start = new Date(`${ymd}T00:00:00+08:00`); const end = new Date(start.getTime() + 24*60*60*1000); return { from: start.toISOString(), to: end.toISOString(), ymd } }
+      const DAY_MS = 24*60*60*1000;
+      function todayRangeInTaipei(){ const now = new Date(); const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: TAIPEI_TZ, year:'numeric', month:'2-digit', day:'2-digit' }).format(now); const start = new Date(`${ymd}T00:00:00+08:00`); const end = new Date(start.getTime() + DAY_MS); return { from: start.toISOString(), to: end.toISOString(), ymd } }
+      function extendedEventRange(){ const base = todayRangeInTaipei(); const start = new Date(base.from); const extendedFrom = new Date(start.getTime() - DAY_MS); const extendedTo = new Date(start.getTime() + 7 * DAY_MS); return { from: extendedFrom.toISOString(), to: extendedTo.toISOString() } }
+
+      const relativeLabel = (eventDate) => {
+        const today = new Date()
+        const currentYmd = new Intl.DateTimeFormat('en-CA', { timeZone: TAIPEI_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(today)
+        const targetYmd = new Intl.DateTimeFormat('en-CA', { timeZone: TAIPEI_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(eventDate)
+        const todayDate = new Date(`${currentYmd}T00:00:00+08:00`)
+        const targetDate = new Date(`${targetYmd}T00:00:00+08:00`)
+        const diffDays = Math.round((targetDate - todayDate) / (24 * 60 * 60 * 1000))
+        if (diffDays === 0) return '今天'
+        if (diffDays === -1) return '昨天'
+        if (diffDays === 1) return '明天'
+        return `${targetYmd.slice(5, 7)}月${targetYmd.slice(8, 10)}日`
+      }
 
       // Improved renderer: includes location, and provides 完成/刪除按鈕
       async function renderTodayV2(){
         const listEl = document.getElementById('today-list');
         if (!listEl) return;
-        const range = todayRangeInTaipei();
+        const range = extendedEventRange();
         const qs = new URLSearchParams({ from: range.from, to: range.to }).toString();
         try {
           const data = await window.aiCompanion.fetchJson(`/events?${qs}`);
@@ -437,8 +452,9 @@
             const hh = String(t.getHours()).padStart(2,'0');
             const mm = String(t.getMinutes()).padStart(2,'0');
             const time = `${hh}:${mm}`;
+            const dayLabel = relativeLabel(t);
             const loc = ev.location ? ` ＠ ${String(ev.location)}` : '';
-            li.innerHTML = `<strong>${time}</strong><span>${(ev.title||'').toString()}${loc}</span><span style="margin-left:auto"></span><button class="btn secondary" data-done>完成</button><button class="btn secondary" data-del>刪除</button>`;
+            li.innerHTML = `<strong>${dayLabel} ${time}</strong><span>${(ev.title||'').toString()}${loc}</span><span style="margin-left:auto"></span><button class="btn secondary" data-done>完成</button><button class="btn secondary" data-del>刪除</button>`;
             li.title = ev.description || '';
             li.style.cursor='pointer';
             li.addEventListener('click', async ()=>{ try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'PATCH', body: JSON.stringify({ status: !ev.status }) }); ev.status=!ev.status; li.style.opacity = ev.status ? '0.55' : '1' } catch {} });
@@ -452,7 +468,36 @@
           console.warn('[today events] load failed', error)
         }
       }
-      async function renderToday(){ const listEl = document.getElementById('today-list'); if (!listEl) return; const range = todayRangeInTaipei(); const qs = new URLSearchParams({ from: range.from, to: range.to }).toString(); try { const data = await window.aiCompanion.fetchJson(`/events?${qs}`); const events = Array.isArray(data?.events) ? data.events : []; if (!events.length) { listEl.innerHTML = '<li><span>今天尚無提醒</span></li>'; return } listEl.innerHTML = ''; for (const ev of events) { const li = document.createElement('li'); const t = new Date(ev.start_time); const hh = String(t.getHours()).padStart(2,'0'); const mm = String(t.getMinutes()).padStart(2,'0'); const time = `${hh}:${mm}`; li.innerHTML = `<strong>${time}</strong><span>${(ev.title||'').toString()}</span><button class="btn secondary" data-del style="margin-left:auto">刪除</button>`; li.title = ev.description || ''; li.style.cursor='pointer'; li.addEventListener('click', async ()=>{ try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'PATCH', body: JSON.stringify({ status: !ev.status }) }); ev.status=!ev.status; li.style.opacity = ev.status ? '0.55' : '1' } catch {} }); li.querySelector('[data-del]').addEventListener('click', async (e)=>{ e.stopPropagation(); if (!confirm('確定刪除此提醒？')) return; try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'DELETE' }); li.remove() } catch { alert('刪除失敗，稍後再試') } }); if (ev.status) li.style.opacity='0.55'; listEl.appendChild(li) } } catch (error) { listEl.innerHTML = '<li><span>載入提醒失敗，稍後再試</span></li>'; console.warn('[today events] load failed', error) } }
+      async function renderToday(){
+        const listEl = document.getElementById('today-list');
+        if (!listEl) return;
+        const range = extendedEventRange();
+        const qs = new URLSearchParams({ from: range.from, to: range.to }).toString();
+        try {
+          const data = await window.aiCompanion.fetchJson(`/events?${qs}`);
+          const events = Array.isArray(data?.events) ? data.events : [];
+          if (!events.length) { listEl.innerHTML = '<li><span>今天尚無提醒</span></li>'; return }
+          listEl.innerHTML = '';
+          for (const ev of events) {
+            const li = document.createElement('li');
+            const t = new Date(ev.start_time);
+            const hh = String(t.getHours()).padStart(2,'0');
+            const mm = String(t.getMinutes()).padStart(2,'0');
+            const time = `${hh}:${mm}`;
+            const dayLabel = relativeLabel(t);
+            li.innerHTML = `<strong>${dayLabel} ${time}</strong><span>${(ev.title||'').toString()}</span><button class="btn secondary" data-del style="margin-left:auto">刪除</button>`;
+            li.title = ev.description || '';
+            li.style.cursor='pointer';
+            li.addEventListener('click', async ()=>{ try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'PATCH', body: JSON.stringify({ status: !ev.status }) }); ev.status=!ev.status; li.style.opacity = ev.status ? '0.55' : '1' } catch {} });
+            li.querySelector('[data-del]').addEventListener('click', async (e)=>{ e.stopPropagation(); if (!confirm('確定刪除此提醒？')) return; try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'DELETE' }); li.remove() } catch { alert('刪除失敗，稍後再試') } });
+            if (ev.status) li.style.opacity='0.55';
+            listEl.appendChild(li)
+          }
+        } catch (error) {
+          listEl.innerHTML = '<li><span>載入提醒失敗，稍後再試</span></li>';
+          console.warn('[today events] load failed', error)
+        }
+      }
       function scheduleNotifications(events){ if (!('Notification' in window)) return; if (Notification.permission !== 'granted') { Notification.requestPermission().catch(()=>{}) } const now = Date.now(); for (const ev of events) { const target = ev.reminder_time || ev.start_time; if (!target) continue; const at = Date.parse(target), delay = at - now; if (Number.isFinite(delay) && delay > 0 && delay <= 24*60*60*1000) { setTimeout(()=>{ try { if (Notification.permission==='granted') new Notification(ev.title || '提醒', { body: ev.description || '時間到了', silent: false }) } catch {} }, delay) } } }
       async function loadAndScheduleToday(){ const range = todayRangeInTaipei(); const qs = new URLSearchParams({ from: range.from, to: range.to }).toString(); try { const data = await window.aiCompanion.fetchJson(`/events?${qs}`); const events = Array.isArray(data?.events) ? data.events : []; scheduleNotifications(events) } catch {} }
       function bindAddForm(){
