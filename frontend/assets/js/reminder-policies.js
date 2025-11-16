@@ -780,7 +780,7 @@
               try {
                 if ('Notification' in window && Notification.permission === 'granted') {
                   const body = `${(window.aiCompanion.formatTimestamp && window.aiCompanion.formatTimestamp(whenIso)) || ''}  ${ev.title || ''}${ev.location ? ' @' + ev.location : ''}`.trim();
-                  new Notification('今日重點提醒', { body });
+                  new Notification('重點提醒', { body });
                 }
               } catch(_){}
               // Speech via Yating
