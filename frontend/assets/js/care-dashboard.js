@@ -29,6 +29,7 @@
     const dropdown = document.getElementById("userDropdown");
     const logoutBtn = document.getElementById("umLogout");
     const accountLink = document.getElementById("umAccount");
+    const permissionsBtn = document.getElementById("permissions-row");
     const nameEl = document.getElementById("umName");
     const emailEl = document.getElementById("umEmail");
 
@@ -78,6 +79,15 @@
       } catch (_) {}
     });
 
+    const hidePermissionsForNonElders = (role) => {
+      const normalized = window.aiCompanion?.normalizeRole?.(role) || role || "";
+      const isElder = normalized.toLowerCase() === "elder";
+      if (permissionsBtn && !isElder) {
+        // 從下拉選單移除權限項，避免留下空白行
+        permissionsBtn.remove();
+      }
+    };
+
     (async () => {
       try {
         const me = await window.aiCompanion?.fetchJson?.("users/me", {
@@ -87,8 +97,13 @@
         if (user) {
           if (nameEl && user.full_name) nameEl.textContent = user.full_name;
           if (emailEl && user.email) emailEl.textContent = user.email;
+          hidePermissionsForNonElders(user.charactor || user.role || "");
+        } else {
+          hidePermissionsForNonElders(readStoredRole());
         }
-      } catch (_) {}
+      } catch (_) {
+        hidePermissionsForNonElders(readStoredRole());
+      }
     })();
   };
 

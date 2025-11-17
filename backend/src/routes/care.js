@@ -29,6 +29,16 @@ const ensureCaregiverUser = async (userId) => {
   return { user: me, mappedRole }
 }
 
+const toOwnerIdArray = (value) => {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((val) => {
+      const num = Number(val)
+      return Number.isFinite(num) ? num : null
+    })
+    .filter((val) => val !== null)
+}
+
 const ensureElderUser = async (userId) => {
   const me = await getCurrentUserWithRole(userId)
   if (!me) return { error: 'not_found' }
@@ -398,7 +408,28 @@ router.get('/elders', requireAuth, async (req, res, next) => {
        ORDER BY u.full_name NULLS LAST, u.user_id ASC`,
       [caregiver.user_id, 'active']
     )
-    return res.json({ elders: result.rows, caregiver_role: mappedRole })
+    let elders = result.rows
+
+    // 舊版資料以 users.owner_user_ids 儲存，若 care_relationships 沒資料，改用 owner_user_ids 回填。
+    if (!elders.length) {
+      const ownerRes = await pool.query(
+        'SELECT owner_user_ids FROM users WHERE user_id = $1 LIMIT 1',
+        [caregiver.user_id]
+      )
+      const ownerIds = toOwnerIdArray(ownerRes.rows[0]?.owner_user_ids)
+      if (ownerIds.length) {
+        const fallback = await pool.query(
+          `SELECT u.user_id, u.full_name, u.age, u.phone, u.address
+           FROM unnest($1::int[]) WITH ORDINALITY AS t(id, ord)
+           JOIN users u ON u.user_id = t.id
+           ORDER BY t.ord`,
+          [ownerIds]
+        )
+        elders = fallback.rows
+      }
+    }
+
+    return res.json({ elders, caregiver_role: mappedRole })
   } catch (err) {
     next(err)
   }

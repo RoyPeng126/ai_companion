@@ -56,12 +56,64 @@
       <section class="hero" aria-label="快速設定引導">
         <div>
           <p class="status-pill">3 分鐘完成設定</p>
-          <h2>語音、提醒、安全一次設定</h2>
+          <h2>提醒、安全一次設定</h2>
           <p>照著問題回答，幾分鐘就能完成。</p>
         </div>
       </section>
 
-      <section class="card" id="home-location-card" aria-labelledby="home-location-title">
+      <!-- 設定分頁切換（僅影響顯示，不改變各區塊功能） -->
+      <section class="settings-switcher" aria-label="設定項目選擇">
+        <div class="segment segment--settings" role="tablist">
+          <button
+            type="button"
+            class="segment__item is-active"
+            data-settings-panel-target="add-elder"
+            role="tab"
+            aria-selected="true"
+          >
+            新增帳號
+          </button>
+          <button
+            type="button"
+            class="segment__item"
+            data-settings-panel-target="home-location"
+            role="tab"
+            aria-selected="false"
+          >
+            住家位置設定
+          </button>
+          <button
+            type="button"
+            class="segment__item"
+            data-settings-panel-target="family-share"
+            role="tab"
+            aria-selected="false"
+          >
+            家庭分享與 Facebook 授權
+          </button>
+          <button
+            type="button"
+            class="segment__item"
+            data-settings-panel-target="account"
+            role="tab"
+            aria-selected="false"
+          >
+            帳號密碼
+          </button>
+        </div>
+      </section>
+
+      <!-- 長者切換下拉選單（主要給照護者使用） -->
+      <section
+        class="settings-elder-switcher"
+        id="settings-elder-switcher"
+        aria-label="選擇欲設定的長者"
+        hidden
+      >
+ 
+      </section>
+
+      <section class="card" id="home-location-card" aria-labelledby="home-location-title" data-settings-panel="home-location">
         <h2 id="home-location-title">住家位置設定</h2>
         <p class="helper-text">請先選擇長者，再選縣市與鄉鎮，輸入路名後拖曳紅點到住家門口即可。</p>
         <div class="map-form">
@@ -103,7 +155,7 @@
         <div id="home-map" aria-label="住家位置預覽"></div>
       </section>
 
-      <section class="card" id="family-setup-card" aria-labelledby="family-setup-title">
+      <section class="card" id="family-setup-card" aria-labelledby="family-setup-title" data-settings-panel="family-share">
         <h2 id="family-setup-title">家庭分享與 Facebook 授權</h2>
         <p class="helper-text">邀請家人完成授權後，親友貼文與聊天室才能讀到他們的近況。</p>
 
@@ -132,31 +184,9 @@
             <p class="helper-text" id="fbStatusText">正在檢查 Facebook 授權狀態。</p>
           </div>
         </div>
-
-        <div class="family-share">
-          <h3>手動分享連結（暫存）</h3>
-          <p class="helper-text">此功能先暫存在本機，之後可同步到後端 `family_feed_shares`。</p>
-          <form id="familyShareForm">
-            <label for="shareName">分享人姓名</label>
-            <input type="text" id="shareName" placeholder="例如：佩真阿姨" required>
-
-            <label for="shareSummary">想分享的話</label>
-            <textarea id="shareSummary" rows="2" maxlength="120" placeholder="簡述內容，120 字內" required></textarea>
-
-            <label for="shareLink">連結</label>
-            <input type="url" id="shareLink" placeholder="https://..." required>
-
-            <button class="btn primary" type="submit">新增到待送清單</button>
-          </form>
-
-          <div class="family-share__list">
-            <h4>待送出的分享</h4>
-            <ul id="shareList"></ul>
-          </div>
-        </div>
       </section>
 
-      <section class="card" id="elder-link-card" data-elder-link>
+      <section class="card" id="elder-link-card" data-elder-link data-settings-panel="add-elder">
         <h2>長者帳號連結</h2>
         <p class="helper-text">家屬與社工輸入長者 User ID 與手機號碼後，即可綁定到正確的長者帳號（最多 3 位）。</p>
         <div class="elder-link__status" data-elder-link-status>
@@ -177,23 +207,6 @@
         </div>
       </section>
 
-      <section class="card" aria-labelledby="voice-settings-title">
-        <h2 id="voice-settings-title">語音合成設定</h2>
-        <p class="helper-text">
-          選喜歡的 AI 奶奶聲音，聽起來順耳就好。
-        </p>
-        <div class="chat-preferences">
-          <div class="chat-preferences__row chat-preferences__row--language">
-            <span class="chat-preferences__label">語音語言</span>
-            <div class="language-toggle" data-language-options role="group" aria-label="語音語言選擇">
-              <button type="button" class="language-chip is-selected" data-language-option="zh-TW" aria-pressed="true">國語</button>
-              <button type="button" class="language-chip" data-language-option="nan-TW" aria-pressed="false">台語</button>
-            </div>
-          </div>
-        </div>
-        <div class="voice-presets" data-voice-options role="radiogroup" aria-labelledby="voice-settings-title"></div>
-        <p class="helper-text">之後想換聲音，再回來調整即可。</p>
-      </section>
     </main>
 
     <footer>
@@ -219,7 +232,6 @@
     } from './assets/js/safety-map.js'
 
     const STORAGE_KEYS = {
-      FAMILY_SHARES: 'ai-companion.pendingFamilyShares',
       LAST_HOME_ELDER: 'ai-companion.lastHomeElderId'
     }
 
@@ -234,6 +246,8 @@
       const detailInput = document.getElementById('homeAddressDetail')
       const elderSelect = document.getElementById('homeElderSelect')
       const elderStatusEl = document.getElementById('homeElderStatus')
+      const globalElderSection = document.getElementById('settings-elder-switcher')
+      const globalElderSelect = document.getElementById('settingsElderSelect')
       if (!feedbackEl || !storedInfoEl || !elderSelect || !elderStatusEl) return
 
       const LAST_ELDER_KEY = STORAGE_KEYS.LAST_HOME_ELDER
@@ -280,6 +294,24 @@
         if (!match) return `長者 #${elderIdValue}`
         const label = match.full_name || match.username || `User #${match.user_id}`
         return `${label}（#${match.user_id}）`
+      }
+
+      const syncGlobalElderSelect = () => {
+        if (!globalElderSelect) return
+        globalElderSelect.innerHTML = '<option value="">' + '請先新增並選擇長者' + '</option>'
+        if (!elders.length) return
+        elders.forEach((elder) => {
+          const option = document.createElement('option')
+          option.value = elder.user_id
+          const label = elder.full_name || elder.username || `User #${elder.user_id}`
+          option.textContent = `${label}�?${elder.user_id}）`
+          globalElderSelect.appendChild(option)
+        })
+        if (Number.isFinite(selectedElderId)) {
+          globalElderSelect.value = String(selectedElderId)
+        } else {
+          globalElderSelect.value = ''
+        }
       }
 
       function populateCounties () {
@@ -714,75 +746,8 @@
       const card = document.getElementById('family-setup-card')
       if (!card) return
 
-      const shareForm = document.getElementById('familyShareForm')
-      const shareList = document.getElementById('shareList')
       const statusPill = document.getElementById('fbStatusPill')
       const statusText = document.getElementById('fbStatusText')
-      const connectBtn = document.querySelector('[data-facebook-connect]')
-
-      const readShares = () => {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEYS.FAMILY_SHARES)
-          const list = raw ? JSON.parse(raw) : []
-          return Array.isArray(list) ? list : []
-        } catch {
-          return []
-        }
-      }
-
-      const persistShares = (items) => {
-        localStorage.setItem(STORAGE_KEYS.FAMILY_SHARES, JSON.stringify(items))
-        renderShares()
-      }
-
-      const renderShares = () => {
-        if (!shareList) return
-        const items = readShares()
-        shareList.innerHTML = ''
-        if (!items.length) {
-          const li = document.createElement('li')
-          li.className = 'family-share__empty'
-          li.textContent = '目前尚無待送出的分享。'
-          shareList.appendChild(li)
-          return
-        }
-        items.forEach(item => {
-          const li = document.createElement('li')
-          li.innerHTML = `
-            <strong>${item.name}</strong>
-            <p>${item.summary}</p>
-            <a href="${item.link}" target="_blank" rel="noopener">${item.link}</a>
-            <button type="button" class="link-button" data-remove="${item.id}">移除</button>
-          `
-          shareList.appendChild(li)
-        })
-      }
-
-      shareList?.addEventListener('click', (event) => {
-        const target = event.target.closest('[data-remove]')
-        if (!target) return
-        const id = target.getAttribute('data-remove')
-        const next = readShares().filter(item => item.id !== id)
-        persistShares(next)
-      })
-
-      shareForm?.addEventListener('submit', (event) => {
-        event.preventDefault()
-        const name = document.getElementById('shareName')?.value.trim()
-        const summary = document.getElementById('shareSummary')?.value.trim()
-        const link = document.getElementById('shareLink')?.value.trim()
-        if (!name || !summary || !link) {
-          alert('請完整填寫分享資訊')
-          return
-        }
-        const payload = { id: `${Date.now()}`, name, summary, link }
-        const list = readShares()
-        list.unshift(payload)
-        persistShares(list)
-        shareForm.reset()
-      })
-
-      renderShares()
 
       async function checkFacebookStatus () {
         if (!window.aiCompanion?.fetchJson || !statusPill || !statusText) return
@@ -878,11 +843,12 @@
         const notice = document.createElement('section')
         notice.className = 'card'
         notice.id = 'elder-lock-card'
+        notice.dataset.settingsPanel = 'home-location'
         notice.innerHTML = `
           <h2>由家屬協助管理</h2>
           <p class="helper-text">此頁面的住家位置與帳號資訊僅供家屬或照護者調整。如需更新，請與家屬聯繫。</p>
         `
-        const anchor = document.getElementById('voice-settings-title')?.closest('section')
+        const anchor = document.getElementById('family-setup-card')?.closest('section')
         if (anchor) {
           main.insertBefore(notice, anchor)
         } else {
@@ -914,6 +880,7 @@
           profileCard = document.createElement('section')
           profileCard.className = 'card'
           profileCard.id = 'account-card'
+          profileCard.dataset.settingsPanel = 'account'
           profileCard.innerHTML = `
             <h2>帳號資訊</h2>
             <form id="profileForm">
@@ -934,6 +901,7 @@
           pwCard = document.createElement('section')
           pwCard.className = 'card'
           pwCard.id = 'password-card'
+          pwCard.dataset.settingsPanel = 'account'
           pwCard.innerHTML = `
             <h2>變更密碼</h2>
             <form id="passwordForm">
@@ -1015,6 +983,215 @@
 
       document.addEventListener('DOMContentLoaded', bootstrap)
     })()
+  </script>
+  <script>
+    (function initSettingsPanelsAndElderSwitcher () {
+      const CARE_ROLES = ['family', 'caregiver', 'social_worker', 'worker', 'case_manager']
+
+      const resolveRole = () => {
+        const raw = window.aiCompanion?.getActiveRole?.() || ''
+        const normalized = window.aiCompanion?.normalizeRole?.(raw) || raw || ''
+        return normalized.toLowerCase()
+      }
+
+      // 目前所有角色共用同一套設定分頁顯示邏輯
+      const isCareRole = () => true
+
+      function setupPanels () {
+        const buttons = Array.from(document.querySelectorAll('[data-settings-panel-target]'))
+        if (!buttons.length) return
+
+        const homeCard = document.getElementById('home-location-card')
+        const familyCard = document.getElementById('family-setup-card')
+        const elderCard = document.getElementById('elder-link-card')
+        const getAccountPanels = () => [
+          document.getElementById('account-card'),
+          document.getElementById('password-card')
+        ].filter(Boolean)
+
+        const PANEL_MAP = {
+          'add-elder': () => [elderCard],
+          'home-location': () => [homeCard],
+          'family-share': () => [familyCard],
+          account: () => getAccountPanels()
+        }
+
+        const showPanel = (key) => {
+          const getter = PANEL_MAP[key] || PANEL_MAP['add-elder']
+          const activePanels = getter().filter(Boolean)
+          const allPanels = [
+            homeCard,
+            familyCard,
+            elderCard,
+            ...getAccountPanels(),
+            document.getElementById('elder-lock-card')
+          ].filter(Boolean)
+
+          // 若不是照護者角色，不強行隱藏其他卡片
+          if (!isCareRole()) {
+            allPanels.forEach((el) => {
+              el.hidden = false
+              el.removeAttribute('aria-hidden')
+            })
+            return
+          }
+
+          allPanels.forEach((el) => {
+            const visible = activePanels.includes(el)
+            el.hidden = !visible
+            el.setAttribute('aria-hidden', visible ? 'false' : 'true')
+          })
+        }
+
+        buttons.forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const target = btn.getAttribute('data-settings-panel-target')
+            buttons.forEach((b) => {
+              const active = b === btn
+              b.classList.toggle('is-active', active)
+              b.setAttribute('aria-selected', active ? 'true' : 'false')
+            })
+            showPanel(target)
+          })
+        })
+
+        // 預設顯示「新增帳號」區塊（照護者）；長者則維持原本排列
+        if (isCareRole()) {
+          showPanel('add-elder')
+        }
+      }
+
+      function setupElderSwitcher () {
+        const globalSelect = document.getElementById('settingsElderSelect')
+        const globalSection = document.getElementById('settings-elder-switcher')
+        const homeSelect = document.getElementById('homeElderSelect')
+        if (!globalSelect || !globalSection || !homeSelect) return
+        if (!isCareRole()) return
+
+        const syncFromHome = () => {
+          const options = Array.from(homeSelect.options)
+          if (!options.length) return
+          globalSelect.innerHTML = ''
+          options.forEach((opt) => {
+            const clone = opt.cloneNode(true)
+            globalSelect.appendChild(clone)
+          })
+          globalSection.hidden = false
+          globalSelect.value = homeSelect.value || ''
+        }
+
+        // 初始同步（等待 homeSelect 由原本程式載入完成）
+        setTimeout(syncFromHome, 0)
+
+        homeSelect.addEventListener('change', () => {
+          syncFromHome()
+        })
+        try {
+          const observer = new MutationObserver(() => {
+            syncFromHome()
+          })
+          observer.observe(homeSelect, { childList: true })
+        } catch (_) {}
+
+        globalSelect.addEventListener('change', () => {
+          if (homeSelect.value === globalSelect.value) return
+          homeSelect.value = globalSelect.value
+          const ev = new Event('change', { bubbles: true })
+          homeSelect.dispatchEvent(ev)
+        })
+      }
+
+                  document.addEventListener('DOMContentLoaded', () => {
+        if (!window.aiCompanion) return
+        // 分頁顯示交給 simpleSettingsPanelSwitcher，這裡只處理長者下拉同步
+        setupElderSwitcher()
+      })
+    })()
+  </script>
+
+
+      <script>
+    // 設定分頁切換：依圓角按鈕顯示對應卡片
+    (function simpleSettingsPanelSwitcher () {
+      const TAB_STORAGE_KEY = 'ai-companion-settings-tab';
+
+      const init = () => {
+        const buttons = Array.from(document.querySelectorAll('[data-settings-panel-target]'));
+        if (!buttons.length) return;
+
+        const refreshPanels = () => Array.from(document.querySelectorAll('[data-settings-panel]'));
+        let panels = refreshPanels();
+
+        const showPanel = (key, { skipPersist = false } = {}) => {
+          panels = refreshPanels();
+          panels.forEach((el) => {
+            const match = (el.dataset.settingsPanel || '').split(',').map(s => s.trim());
+            const visible = match.includes(key);
+            el.hidden = !visible;
+            el.setAttribute('aria-hidden', visible ? 'false' : 'true');
+          });
+          if (!skipPersist) {
+            try {
+              sessionStorage.setItem(TAB_STORAGE_KEY, key);
+            } catch (_) {}
+          }
+        };
+
+        buttons.forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const key = btn.getAttribute('data-settings-panel-target');
+            buttons.forEach((b) => {
+              const active = b === btn;
+              b.classList.toggle('is-active', active);
+              b.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            showPanel(key);
+          });
+        });
+
+        const storedKey = (() => {
+          try {
+            return sessionStorage.getItem(TAB_STORAGE_KEY) || '';
+          } catch (_) {
+            return '';
+          }
+        })();
+        const availableKeys = new Set(
+          panels.flatMap(p => (p.dataset.settingsPanel || '').split(',').map(s => s.trim()).filter(Boolean))
+        );
+        const initialKey = storedKey && availableKeys.has(storedKey) ? storedKey : 'add-elder';
+
+        const initialBtn = buttons.find((btn) => btn.getAttribute('data-settings-panel-target') === initialKey);
+        if (initialBtn) {
+          buttons.forEach((b) => {
+            const active = b === initialBtn;
+            b.classList.toggle('is-active', active);
+            b.setAttribute('aria-selected', active ? 'true' : 'false');
+          });
+        }
+        showPanel(initialKey, { skipPersist: true });
+
+        // 若帳號卡片稍後才插入 DOM，觀察 main 並重新套用一次目前分頁隱藏狀態。
+        try {
+          const main = document.querySelector('main');
+          if (main) {
+            const observer = new MutationObserver(() => {
+              panels = refreshPanels();
+              const activeBtn = buttons.find((btn) => btn.classList.contains('is-active'));
+              const key = activeBtn?.getAttribute('data-settings-panel-target') || initialKey;
+              showPanel(key, { skipPersist: true });
+            });
+            observer.observe(main, { childList: true });
+          }
+        } catch (_) {}
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, { once: true });
+      } else {
+        init();
+      }
+    })();
   </script>
 </body>
 </html>

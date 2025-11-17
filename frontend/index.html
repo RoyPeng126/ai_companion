@@ -566,5 +566,116 @@
       renderTodayV2(); loadAndScheduleToday(); bindAddForm()
     })()
   </script>
+  <script>
+    (function enhanceReminderFilter(){
+      const DAY_MS = 24*60*60*1000;
+      const TAIPEI_TZ = 'Asia/Taipei';
+      document.addEventListener('DOMContentLoaded', () => {
+        const listEl = document.getElementById('today-list');
+        if (!listEl) return;
+
+        const card = listEl.closest('.card');
+        if (!card) return;
+
+        let filterInput = document.getElementById('reminderFilterDate');
+        if (!filterInput) {
+          const row = document.createElement('div');
+          row.className = 'reminder-filter-row';
+          const label = document.createElement('label');
+          label.htmlFor = 'reminderFilterDate';
+          label.textContent = '日期';
+          filterInput = document.createElement('input');
+          filterInput.type = 'date';
+          filterInput.id = 'reminderFilterDate';
+          const clearBtn = document.createElement('button');
+          clearBtn.type = 'button';
+          clearBtn.className = 'reminder-filter-clear';
+          clearBtn.textContent = '清除日期（回到預設）';
+          row.appendChild(label);
+          row.appendChild(filterInput);
+          row.appendChild(clearBtn);
+          card.insertBefore(row, listEl);
+          const helper = card.querySelector('.helper-text');
+          if (helper) helper.textContent = '選擇某日會顯示該日提醒，清除日期則回到「昨日未完成 + 今日與明日」。';
+          clearBtn.addEventListener('click', () => {
+            filterInput.value = '';
+            applyFilter();
+          });
+        }
+
+        const fmt = new Intl.DateTimeFormat('en-CA', {
+          timeZone: TAIPEI_TZ,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+
+        const computeBaseDates = () => {
+          const now = new Date();
+          const todayYmd = fmt.format(now);
+          const todayDate = new Date(`${todayYmd}T00:00:00+08:00`);
+          const yesterdayYmd = fmt.format(new Date(todayDate.getTime() - DAY_MS));
+          const tomorrowYmd = fmt.format(new Date(todayDate.getTime() + DAY_MS));
+          return { todayYmd, yesterdayYmd, tomorrowYmd };
+        };
+
+        const getYmdFromLabel = (label) => {
+          if (!label) return null;
+          label = label.trim();
+          const { todayYmd, yesterdayYmd, tomorrowYmd } = computeBaseDates();
+          if (label.startsWith('今天')) return todayYmd;
+          if (label.startsWith('昨天')) return yesterdayYmd;
+          if (label.startsWith('明天')) return tomorrowYmd;
+          const m = label.match(/(\d{1,2})月(\d{1,2})日/);
+          if (!m) return null;
+          const now = new Date();
+          const year = now.getFullYear();
+          const mm = String(Number(m[1])).padStart(2, '0');
+          const dd = String(Number(m[2])).padStart(2, '0');
+          return `${year}-${mm}-${dd}`;
+        };
+
+        const applyFilter = () => {
+          const { todayYmd, yesterdayYmd, tomorrowYmd } = computeBaseDates();
+          const selected = filterInput && filterInput.value ? filterInput.value : null;
+          const items = Array.from(listEl.querySelectorAll('li'));
+          items.forEach(li => {
+            const strong = li.querySelector('strong');
+            if (!strong) return;
+            const label = strong.textContent || '';
+            const ymd = getYmdFromLabel(label);
+            if (!ymd) {
+              li.style.display = 'none';
+              return;
+            }
+            let show = false;
+            if (selected) {
+              show = (ymd === selected);
+            } else {
+              const completed = (li.style.opacity === '0.55');
+              if (ymd === todayYmd || ymd === tomorrowYmd) show = true;
+              else if (ymd === yesterdayYmd && !completed) show = true;
+            }
+            li.style.display = show ? '' : 'none';
+          });
+        };
+
+        applyFilter();
+
+        if (filterInput) {
+          filterInput.addEventListener('change', () => {
+            applyFilter();
+          });
+        }
+
+        try {
+          const obs = new MutationObserver(() => {
+            applyFilter();
+          });
+          obs.observe(listEl, { childList: true, subtree: false, attributes: true, attributeFilter: ['style'] });
+        } catch (_) {}
+      });
+    })();
+  </script>
 </body>
 </html>

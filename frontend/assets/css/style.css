@@ -333,6 +333,26 @@ footer {
   border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
+.btn.secondary.care-invite-accept {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+
+.btn.secondary.care-invite-accept:hover {
+  filter: brightness(0.95);
+}
+
+.btn.secondary.care-invite-reject {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.btn.secondary.care-invite-reject:hover {
+  filter: brightness(0.95);
+}
+
 .interest-history__toggle {
   background: #fff5f5;
   color: #b91c1c;
@@ -1435,6 +1455,50 @@ footer {
   background:#fff; border-radius:999px; transition:transform .25s ease;
 }
 
+.settings-switcher{
+  max-width: 960px;
+  margin: 0 auto 12px;
+}
+
+.settings-switcher .segment{
+  width: 100%;
+  margin-top: 8px;
+  background: #ffe5cc; /* 淺橘底，與上方 hero 呼應 */
+}
+
+.segment--settings .segment__item{
+  color: #c65306; /* 深一點的橘紅文字 */
+}
+
+.segment--settings .segment__item.is-active{
+  background: #ff9f43; /* 顯眼橘色膠囊 */
+  color: #fff;
+}
+
+.settings-elder-switcher{
+  max-width: 960px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-elder-label{
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;   /* 避免「設定對象」被擠到換行 */
+  flex: 0 0 auto;
+}
+
+.settings-elder-switcher select{
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.12);
+  font-size: 0.9rem;
+}
+
 /* --- Podium（底齊、細柱、膠囊名條） --- */
 .podium{
   display:flex; align-items:flex-end; justify-content:center;
@@ -1702,6 +1766,50 @@ body{
   display: flex;
   justify-content: flex-end;
   margin-top: 12px;
+}
+
+.reminder-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.reminder-filter-row label {
+  font-weight: 700;
+  color: var(--primary-dark);
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.reminder-filter-row input[type="date"] {
+  padding: 0.55rem 0.75rem;
+  border-radius: 999px;
+  border: 2px solid rgba(180, 29, 50, 0.2);
+  font-size: 0.9rem;
+  min-width: 180px;
+}
+
+.reminder-filter-clear{
+  margin-left: 0;
+  font-size: 0.8rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--primary-dark);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn.secondary.care-add-elder-btn {
+  background: #38b000;
+  color: #fff;
+  border: none;
+}
+
+.btn.secondary.care-add-elder-btn:hover {
+  filter: brightness(0.95);
 }
 
 .today-add-form {
@@ -2142,4 +2250,9 @@ body{
   padding: 0.75rem 1rem;
   border-radius: 12px;
   background: rgba(230, 57, 70, 0.08);
+}
+
+/* 確保被 hidden 的卡片真會消失，即使其他樣式覆蓋 display */
+.card[hidden] {
+  display: none !important;
 }
