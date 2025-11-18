@@ -328,9 +328,10 @@ footer {
 }
 
 .btn.secondary {
-  background: rgba(255, 255, 255, 0.25);
-  color: #fff;
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  background: rgba(230, 57, 70, 0.12);
+  color: var(--primary-dark);
+  border: 2px solid rgba(230, 57, 70, 0.35);
+  box-shadow: 0 8px 16px rgba(230, 57, 70, 0.14);
 }
 
 .btn.secondary.care-invite-accept {

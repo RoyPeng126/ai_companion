@@ -56,7 +56,8 @@
             <div class="user-name" id="umName">使用者</div>
             <div class="user-email" id="umEmail"></div>
           </div>
-          <a class="menu-item" href="setting.html" id="umAccount">帳號設定</a>
+          <!-- 保留隱藏佔位，讓權限行仍能掛載 -->
+          <span id="umAccount" hidden aria-hidden="true"></span>
           <button class="menu-item" id="umLogout" type="button">登出</button>
         </div>
       </div>
@@ -85,7 +86,6 @@
             <span class="status-chip status-chip--alert" id="safetyChip">尚未設定</span>
             <p class="safety-status__summary" id="safetySummary">尚未設定住家地址。</p>
             <p class="info-text" id="safetyDetail">請前往快速設定頁面儲存住家位置，以啟用安全範圍提醒。</p>
-            <a class="btn secondary" id="safetySetupBtn" href="setting.html">前往設定</a>
             <p class="map-feedback map-feedback--error" id="safetyWarning" hidden></p>
           </div>
           <div id="safety-map" aria-label="安全地圖"></div>
@@ -295,11 +295,17 @@
 
   <!-- 安全地圖模組 -->
   <script type="module">
-    import { initLeafletMap, getStoredHome, haversineDistanceMeters, metersToKmString, SAFETY_RADIUS_METERS } from './assets/js/safety-map.js'
+    import {
+      initLeafletMap,
+      getStoredHome,
+      saveHome,
+      haversineDistanceMeters,
+      metersToKmString,
+      SAFETY_RADIUS_METERS
+    } from './assets/js/safety-map.js'
     const chipEl = document.getElementById('safetyChip')
     const summaryEl = document.getElementById('safetySummary')
     const detailEl = document.getElementById('safetyDetail')
-    const setupBtn = document.getElementById('safetySetupBtn')
     const warningEl = document.getElementById('safetyWarning')
     const { map, L } = initLeafletMap('safety-map', { zoomControl: false })
     const homeIcon = L.divIcon({ className: 'home-marker', html: '<span class="home-marker__icon">🏠</span>', iconAnchor: [16, 32], popupAnchor: [0, -28] })
@@ -312,12 +318,33 @@
     }
     function clearWarning () { warningEl.hidden = true; warningEl.textContent = '' }
     function showWarning (m) { warningEl.hidden = false; warningEl.textContent = m }
-    function renderNoHomeState () { setChipState('unset'); summaryEl.textContent = '尚未設定住家地址。'; detailEl.textContent = '請前往快速設定頁面儲存住家位置，以啟用安全範圍提醒。'; setupBtn.hidden = false; clearWarning() }
-    function renderPendingLocation () { setChipState('safe'); summaryEl.textContent = '正在取得目前位置…'; detailEl.textContent = '取得定位後將更新與住家的距離。'; setupBtn.hidden = true; clearWarning() }
-    function renderSafeState (distance) { setChipState('safe'); summaryEl.textContent = distance <= 30 ? '您目前在家中。' : '您目前在安全範圍內。'; detailEl.textContent = `距離住家約 ${metersToKmString(distance)}，安全範圍為 2 公里。`; setupBtn.hidden = true; clearWarning() }
-    function renderAlertState (distance) { setChipState('alert'); summaryEl.textContent = '您已超出安全範圍！'; detailEl.textContent = `距離住家約 ${metersToKmString(distance)}，請儘速通知家人或返回安全區域。`; setupBtn.hidden = true; if (!hasAlerted) { alert('您已超出 2 公里安全範圍！'); hasAlerted = true } clearWarning() }
+    function renderNoHomeState () { setChipState('unset'); summaryEl.textContent = '尚未設定住家地址。'; detailEl.textContent = '請前往快速設定頁面儲存住家位置，以啟用安全範圍提醒。'; clearWarning() }
+    function renderPendingLocation () { setChipState('safe'); summaryEl.textContent = '正在取得目前位置…'; detailEl.textContent = '取得定位後將更新與住家的距離。'; clearWarning() }
+    function renderSafeState (distance) { setChipState('safe'); summaryEl.textContent = distance <= 30 ? '您目前在家中。' : '您目前在安全範圍內。'; detailEl.textContent = `距離住家約 ${metersToKmString(distance)}，安全範圍為 2 公里。`; clearWarning() }
+    function renderAlertState (distance) { setChipState('alert'); summaryEl.textContent = '您已超出安全範圍！'; detailEl.textContent = `距離住家約 ${metersToKmString(distance)}，請儘速通知家人或返回安全區域。`; if (!hasAlerted) { alert('您已超出 2 公里安全範圍！'); hasAlerted = true } clearWarning() }
     function handleGeolocationError () { showWarning('無法取得目前位置（可能尚未授權定位）。') }
-    const home = getStoredHome()
+    async function fetchHomeFromServer () {
+      try {
+        if (!window.aiCompanion?.fetchJson) return null
+        const meRes = await window.aiCompanion.fetchJson('users/me', { method: 'GET' })
+        const me = meRes?.user || meRes
+        const userId = Number(me?.user_id)
+        if (!Number.isFinite(userId)) return null
+        const locRes = await window.aiCompanion.fetchJson(`elder-locations/${userId}`, { method: 'GET' })
+        const loc = locRes?.location || locRes
+        if (loc?.address && Number.isFinite(loc.latitude) && Number.isFinite(loc.longitude)) {
+          // 把後端的住家位置同步到本機，讓長者端能感知家屬設定。
+          saveHome({ address: loc.address, lat: Number(loc.latitude), lon: Number(loc.longitude) })
+          return { address: loc.address, lat: Number(loc.latitude), lon: Number(loc.longitude) }
+        }
+      } catch (_) {}
+      return null
+    }
+
+    let home = getStoredHome()
+    if (!home) {
+      home = await fetchHomeFromServer()
+    }
     if (!home) { renderNoHomeState() } else {
       renderPendingLocation()
       if (homeMarker) map.removeLayer(homeMarker); if (safetyCircle) map.removeLayer(safetyCircle)
@@ -334,7 +361,7 @@
         userMarker = L.marker(coords, { title: '目前位置' }).addTo(map).bindPopup('目前位置'); userMarker.openPopup()
         if (distance <= SAFETY_RADIUS_METERS) renderSafeState(distance); else renderAlertState(distance); return
       }
-      userMarker = L.marker(coords, { title: '目前位置' }).addTo(map).bindPopup('目前位置'); userMarker.openPopup(); summaryEl.textContent = '已取得目前位置。'; detailEl.textContent = '請在快速設定頁面儲存住家地址，以啟用安全提醒。'; setupBtn.hidden = false; map.setView(coords, 15)
+      userMarker = L.marker(coords, { title: '目前位置' }).addTo(map).bindPopup('目前位置'); userMarker.openPopup(); summaryEl.textContent = '已取得目前位置。'; detailEl.textContent = '請在快速設定頁面儲存住家地址，以啟用安全提醒。'; map.setView(coords, 15)
     }
     if ('geolocation' in navigator) { navigator.geolocation.getCurrentPosition((pos)=>renderUserLocation([pos.coords.latitude, pos.coords.longitude]), ()=>handleGeolocationError(), { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }) } else { showWarning('瀏覽器不支援定位功能。') }
     if (!home) { map.setView([25.033, 121.5654], 13) }
