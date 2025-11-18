@@ -39,6 +39,22 @@ const toOwnerIdArray = (value) => {
     .filter((val) => val !== null)
 }
 
+const hasCaregiverElderRelation = async (caregiverId, elderId) => {
+  const rel = await pool.query(
+    'SELECT 1 FROM care_relationships WHERE caregiver_id = $1 AND elder_id = $2 AND status = $3 LIMIT 1',
+    [caregiverId, elderId, 'active']
+  )
+  if (rel.rowCount > 0) return true
+
+  // 舊版資料以 users.owner_user_ids 紀錄關係，避免老資料無法讀取。
+  const ownerRes = await pool.query(
+    'SELECT owner_user_ids FROM users WHERE user_id = $1 LIMIT 1',
+    [caregiverId]
+  )
+  const owners = toOwnerIdArray(ownerRes.rows[0]?.owner_user_ids)
+  return owners.includes(elderId)
+}
+
 const ensureElderUser = async (userId) => {
   const me = await getCurrentUserWithRole(userId)
   if (!me) return { error: 'not_found' }
@@ -472,11 +488,8 @@ router.get('/elders/:elderId/events', requireAuth, async (req, res, next) => {
     if (error === 'not_found') return res.status(404).json({ error: 'not_found' })
     if (error === 'forbidden_role') return res.status(403).json({ error: 'caregiver_only' })
 
-    const rel = await pool.query(
-      'SELECT 1 FROM care_relationships WHERE caregiver_id = $1 AND elder_id = $2 AND status = $3 LIMIT 1',
-      [caregiver.user_id, elderId, 'active']
-    )
-    if (rel.rowCount === 0) {
+    const hasRelation = await hasCaregiverElderRelation(caregiver.user_id, elderId)
+    if (!hasRelation) {
       return res.status(403).json({ error: 'no_relationship' })
     }
 
@@ -521,11 +534,8 @@ router.post('/elders/:elderId/events/bulk', requireAuth, async (req, res, next) 
     if (error === 'not_found') return res.status(404).json({ error: 'not_found' })
     if (error === 'forbidden_role') return res.status(403).json({ error: 'caregiver_only' })
 
-    const rel = await pool.query(
-      'SELECT 1 FROM care_relationships WHERE caregiver_id = $1 AND elder_id = $2 AND status = $3 LIMIT 1',
-      [caregiver.user_id, elderId, 'active']
-    )
-    if (rel.rowCount === 0) {
+    const hasRelation = await hasCaregiverElderRelation(caregiver.user_id, elderId)
+    if (!hasRelation) {
       return res.status(403).json({ error: 'no_relationship' })
     }
 
