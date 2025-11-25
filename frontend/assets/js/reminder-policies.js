@@ -316,6 +316,12 @@
     // 不在顯示卡片時播放語音，改為新增成功後再播出提示
     const result = await new Promise((resolve)=>{
       redo.addEventListener('click', ()=>{
+        const recBtn = document.getElementById('record-toggle');
+        const isRecording = recBtn && recBtn.classList.contains('recording');
+        if (isRecording) {
+          try { recBtn.click(); } catch(_){}
+          return;
+        }
         try { if (window.aiCompanion && window.aiCompanion.deleteLatestMemo) window.aiCompanion.deleteLatestMemo(); } catch(_){}
         try { if (window.aiCompanion && window.aiCompanion.startVoiceRecording) window.aiCompanion.startVoiceRecording(); else { const r=document.getElementById('record-toggle'); r && r.click(); } } catch(_){}
       }, { once:false });
@@ -392,9 +398,26 @@
               btn.style.background='#FFE6CC'; btn.style.border='1px solid #FFB980'; btn.style.color='#A84B00';
               btn.addEventListener('click', () => {
                 const recBtn = document.getElementById('record-toggle');
-                try { if (recBtn && !recBtn.classList.contains('recording')) recBtn.click(); } catch(_){}
                 const getLatest = () => { const li=document.querySelector('#memo-list li'); const t=li?li.querySelector('.memo-text'):null; return t?(t.textContent||'').trim():'' };
                 const prev = getLatest();
+
+                // 已在錄音時：第二次點擊先停麥克風，抓最新語音結果填入
+                if (recBtn && recBtn.classList.contains('recording')) {
+                  try { recBtn.click(); } catch(_){}
+                  setTimeout(() => {
+                    const cur = getLatest();
+                    if (cur && cur !== prev) {
+                      if (mode === 'time') {
+                        const parsed = extractTimeComponents(cur);
+                        if (parsed?.time) { inputEl.value = parsed.time; return; }
+                      }
+                      inputEl.value = cur;
+                    }
+                  }, 800);
+                  return;
+                }
+
+                try { if (recBtn && !recBtn.classList.contains('recording')) recBtn.click(); } catch(_){}
                 let ticks = 40; const timer = setInterval(() => {
                   const cur = getLatest();
                   if (cur && cur !== prev) {
@@ -417,6 +440,7 @@
             };
             if (time) attachMic(time, '時間', 'time');
             if (loc) attachMic(loc, '地點', 'text');
+            if (cat) attachMic(cat, '類別', 'text');
             if (desc) attachMic(desc, '說明', 'text');
           } catch(_){}
           const actions = document.createElement('div'); actions.style.cssText='display:flex;gap:8px;justify-content:flex-end';

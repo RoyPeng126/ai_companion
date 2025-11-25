@@ -245,21 +245,50 @@
     renderList();
   };
 
-  const saveInterest = async (interest) => {
-    if (!interest || isSaving) return;
+  // 將輸入文字拆成多個興趣：
+  // - 中文頓號、全形/半形逗號、分號
+  // - 連接詞「和/跟/與/及」前後可有空白
+  // - 連續空白也會拆（方便「吃烤肉 踏青」這種）
+  const splitInterests = (text) => {
+    if (!text) return [];
+    const normalized = String(text)
+      .replace(/[\r\n]+/g, " ")
+      .trim();
+    if (!normalized) return [];
+    const parts = normalized
+      .split(/(?:[、，,;；]|(?:\s*(?:和|跟|與|及)\s*)|\s{2,})/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    // 去除重複（以大小寫不敏感比對）
+    const seen = new Set();
+    const uniques = [];
+    for (const p of parts) {
+      const key = p.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      uniques.push(p);
+    }
+    return uniques;
+  };
+
+  const saveInterests = async (interests) => {
+    if (!Array.isArray(interests) || !interests.length || isSaving) return;
     isSaving = true;
     setStatus("儲存興趣中...");
     try {
-      const payload = { interest };
-      if (context.elderId) payload.elder_user_id = context.elderId;
-      const response = await api.fetchJson("/companion-styles", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-      if (response?.interest) {
-        appendInterest(response.interest);
-        setStatus("已儲存興趣話題。");
+      // 逐筆送出，避免後端 schema 大改；若需要可改成批次 API
+      for (const interest of interests) {
+        const payload = { interest };
+        if (context.elderId) payload.elder_user_id = context.elderId;
+        const response = await api.fetchJson("/companion-styles", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        if (response?.interest) {
+          appendInterest(response.interest);
+        }
       }
+      setStatus("已儲存興趣話題。");
       if (textInput) textInput.value = "";
     } catch (error) {
       console.warn("[interest] save failed", error);
@@ -271,11 +300,12 @@
 
   const handleManualSave = async () => {
     const value = (textInput?.value || "").trim();
-    if (!value) {
+    const items = splitInterests(value);
+    if (!items.length) {
       setStatus("請先輸入興趣內容。", "error");
       return;
     }
-    await saveInterest(value);
+    await saveInterests(items);
   };
 
   const handleVoiceResult = async (audioBase64) => {
