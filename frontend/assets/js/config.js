@@ -11,10 +11,14 @@
   }
 
   const deriveBaseFromLocation = () => {
+    try {
+      if (window.location?.origin) return window.location.origin
+    } catch (_) {}
     const protocol = window.location?.protocol || 'http:'
     const hostname = window.location?.hostname || 'localhost'
-    // Backend listens on 3001 by default; keep same host to stay same-site on LAN.
-    return `${protocol}//${hostname || 'localhost'}:3001`
+    const port = window.location?.port || '3001'
+    const portPart = port ? `:${port}` : ''
+    return `${protocol}//${hostname || 'localhost'}${portPart}`
   }
 
   const sanitize = (value) => {

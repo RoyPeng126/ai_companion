@@ -24,10 +24,14 @@
   };
 
   const deriveDefaultApiOrigin = () => {
+    try {
+      if (window.location?.origin) return sanitizeOrigin(window.location.origin);
+    } catch (_) {}
     const protocol = window.location?.protocol || "http:";
     const hostname = window.location?.hostname || "localhost";
-    const defaultPort = "3001";
-    return sanitizeOrigin(`${protocol}//${hostname || "localhost"}:${defaultPort}`);
+    const port = window.location?.port || "3001";
+    const portPart = port ? `:${port}` : "";
+    return sanitizeOrigin(`${protocol}//${hostname || "localhost"}${portPart}`);
   };
 
   const resolveApiOrigin = () => {
