@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智護生活：AI 伴你</title>
+  <link rel="icon" href="assets/image/logo.jpg" type="image/x-icon">
+  <!-- CSS -->
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin>
+  <link rel="stylesheet" href="assets/css/safety-map.css">
+  <script>
+    // 首訪導到 welcome
+    (function () {
+      const storageKey = 'ai-companion-skip-welcome'
+      const fromWelcome = document.referrer && document.referrer.includes('welcome.html')
+      try {
+        if (!fromWelcome && !sessionStorage.getItem(storageKey)) {
+          sessionStorage.setItem(storageKey, 'true')
+          window.location.replace('welcome.html')
+        }
+      } catch (error) {
+        if (!fromWelcome) window.location.replace('welcome.html')
+      }
+    })()
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="top-bar" aria-label="主要導覽">
+      <div class="brand">
+        <span class="brand-logo" aria-hidden="true">
+        <img src="assets/image/logo.jpg" alt="AI Logo" class="logo-img">
+        </span>
+        <h1>智護生活：AI 伴你</h1>
+      </div>
+      <button class="menu-toggle" type="button" aria-controls="site-nav" aria-expanded="false" data-menu-toggle>
+        <span class="sr-only">切換導覽選單</span>
+        <span class="hamburger" aria-hidden="true"></span>
+      </button>
+      <nav id="site-nav" class="nav-links" data-menu>
+        <a href="index.html">首頁</a>
+        <a href="function.html" aria-current="page">功能總覽</a>
+        <a href="ranking.html">健康排行榜</a>
+        <a href="guide.html">離線幫助指南</a>
+      </nav>
+      <div class="user-menu" id="userMenu" aria-label="使用者選單">
+        <button class="avatar-btn" id="avatarBtn" aria-haspopup="menu" aria-expanded="false" title="使用者選單">
+          <span class="sr-only">開啟使用者選單</span>
+          <span class="avatar-frame">
+            <img class="avatar-image" id="avatarImage" alt="使用者頭像" hidden>
+            <span class="avatar-initials" id="avatarInitials">U</span>
+          </span>
+        </button>
+        <div class="menu-dropdown" id="userDropdown" hidden>
+          <div class="user-header">
+            <div class="user-name" id="umName">使用者</div>
+            <div class="user-email" id="umEmail"></div>
+          </div>
+          <!-- 保留隱藏佔位，讓權限行仍能掛載 -->
+          <span id="umAccount" hidden aria-hidden="true"></span>
+          <button class="menu-item" id="umLogout" type="button">登出</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="status-pill">高齡友善．情感陪伴．安全守護</p>
+          <h2>讓陪伴與提醒成為生活一部分</h2>
+        </div>
+      </section>
+
+      <section class="grid two" aria-label="快速操作">
+        <article class="card">
+          <h3>重點提醒</h3>
+          <ul class="list" id="today-list"></ul>
+          
+          </form>
+          <p class="helper-text">提醒來源可由長者語音新增或家屬遠端同步。</p>
+        </article>
+
+        <article class="card" id="safety-card">
+          <h3>安全概況</h3>
+          <div class="safety-status" id="safetyStatus">
+            <span class="status-chip status-chip--alert" id="safetyChip">尚未設定</span>
+            <p class="safety-status__summary" id="safetySummary">尚未設定住家地址。</p>
+            <p class="info-text" id="safetyDetail">請前往快速設定頁面儲存住家位置，以啟用安全範圍提醒。</p>
+            <p class="map-feedback map-feedback--error" id="safetyWarning" hidden></p>
+          </div>
+          <div id="safety-map" aria-label="安全地圖"></div>
+          <p class="helper-text">外出時會偵測與住家的距離，超過 2 公里將通知家屬。</p>
+        </article>
+      </section>
+
+      <section class="grid two" aria-label="社交與回憶">
+        <article class="card friend-forum-card" data-friend-forum aria-live="polite">
+          <div class="card-header">
+            <div>
+              <p class="status-pill">好友限定</p>
+              <h3>社群論壇活動</h3>
+              <p class="helper-text">互相成為好友後，才能看到活動並回覆是否參加。</p>
+            </div>
+            <button class="btn secondary" type="button" data-friend-refresh>重新整理</button>
+          </div>
+          <div class="friend-forum__meta" data-friend-meta>
+            <p>我的 User ID：<strong data-user-id>載入中</strong></p>
+            <p>註冊手機：<span data-user-phone>載入中</span></p>
+          </div>
+          <div class="friend-forum__body" data-friend-forum-body>
+            <section class="friend-requests">
+              <div class="friend-requests__header">
+                <h4>好友邀請</h4>
+                <span class="badge" data-request-count>0</span>
+              </div>
+              <div class="friend-requests__lists">
+                <div>
+                  <h5>收到的邀請</h5>
+                  <ul class="list" data-friend-incoming></ul>
+                </div>
+                <div>
+                  <h5>我送出的邀請</h5>
+                  <ul class="list" data-friend-sent></ul>
+                </div>
+              </div>
+              <form class="friend-form" data-friend-request-form>
+                <label for="friendPhone">輸入好友手機號碼</label>
+                <input type="tel" id="friendPhone" name="phone" inputmode="numeric" placeholder="09xxxxxxxx" required>
+                <button class="btn primary" type="submit">送出邀請</button>
+                <p class="helper-text">每位長輩最多可加入 10 位好友。</p>
+              </form>
+            </section>
+
+            <section class="friend-list-section">
+              <div class="friend-list__header">
+                <h4>好友名單</h4>
+                <span class="helper-text" data-friend-count></span>
+              </div>
+              <ul class="pill-list" data-friend-list></ul>
+            </section>
+
+            <section class="friend-events">
+              <h4>好友論壇活動</h4>
+              <ul class="list" data-friend-events></ul>
+              <form class="friend-form" data-friend-event-form>
+                <label for="friendEventTitle">活動名稱</label>
+                <input type="text" id="friendEventTitle" name="title" placeholder="例如：週三晨走" required>
+
+                <label for="friendEventTime">時間</label>
+                <input type="datetime-local" id="friendEventTime" name="start_time" required>
+
+                <label for="friendEventLocation">地點</label>
+                <input type="text" id="friendEventLocation" name="location" placeholder="集合位置（可選）">
+
+                <label for="friendEventParticipants">想邀請的好友 User ID（可留白）</label>
+                <input type="text" id="friendEventParticipants" name="participant_user_ids" placeholder="101, 205">
+                <button class="btn secondary" type="submit">發布活動</button>
+              </form>
+            </section>
+          </div>
+          <div class="friend-forum__empty" data-friend-forum-empty hidden>
+            <p>此區塊僅提供長輩帳號使用。請協助長輩分享手機與 User ID，讓好友可以加入。</p>
+          </div>
+        </article>
+        <article class="card facebook-feed-card" data-facebook-feed>
+          <div class="card-header">
+            <h3>親友最新動態</h3>
+            <button class="btn secondary" type="button" data-facebook-refresh aria-label="重新整理 Facebook 貼文">重新整理</button>
+          </div>
+          <ul class="list facebook-feed__list" id="facebook-feed-list">
+            <li class="facebook-feed__empty"><span>貼文載入中...</span></li>
+          </ul>
+          <p class="helper-text" id="facebook-feed-status">僅顯示主動授權的家人、粉絲專頁與手動分享內容，安全又合規。</p>
+        </article>
+      </section>
+
+    </main>
+
+    <footer>
+      <p>© 2025 NCCU=MIS+STAT．以科技帶來有溫度的陪伴</p>
+    </footer>
+  </div>
+
+  <!-- JS 順序：先基礎，再功能模組 -->
+  <script>
+    // Reorder cards: Chat -> top-left, Today -> top-right, Safety map -> next row left
+    (function(){
+      try {
+        const grids = document.querySelectorAll('.grid.two');
+        if (grids.length >= 2) {
+          const first = grids[0];
+          const second = grids[1];
+          const todayCard = first.querySelector('#today-list')?.closest('article');
+          const safetyCard = first.querySelector('#safety-card');
+          const chatCard = second.querySelector('[data-ai-chat]')?.closest('article');
+          const secondArticles = Array.from(second.querySelectorAll('article'));
+          const socialCard = secondArticles.find(a => !a.contains(second.querySelector('[data-ai-chat]')));
+          if (first && second && todayCard && safetyCard && chatCard && socialCard) {
+            first.insertBefore(chatCard, first.firstChild);
+            if (todayCard !== first.lastElementChild) first.appendChild(todayCard);
+            second.insertBefore(safetyCard, second.firstChild);
+            if (socialCard !== second.lastElementChild) second.appendChild(socialCard);
+          }
+        }
+      } catch(_) {}
+    })();
+  </script>
+  <script src="assets/js/app.js"></script>
+    <script src="assets/js/toast.js"></script>
+    <script src="assets/js/facebook-feed.js"></script>
+    <script src="assets/js/friend-forum.js"></script>
+    <script src="assets/js/settings.js"></script>
+    <script src="assets/js/reminders.js"></script>
+    <script src="assets/js/reminder-policies.js"></script>
+    <script src="assets/js/care-elder-invitations.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
+
+  <!-- 安全地圖模組 -->
+  <script type="module">
+    import {
+      initLeafletMap,
+      getStoredHome,
+      saveHome,
+      haversineDistanceMeters,
+      metersToKmString,
+      SAFETY_RADIUS_METERS
+    } from './assets/js/safety-map.js'
+    const chipEl = document.getElementById('safetyChip')
+    const summaryEl = document.getElementById('safetySummary')
+    const detailEl = document.getElementById('safetyDetail')
+    const warningEl = document.getElementById('safetyWarning')
+    const { map, L } = initLeafletMap('safety-map', { zoomControl: false })
+    const homeIcon = L.divIcon({ className: 'home-marker', html: '<span class="home-marker__icon">🏠</span>', iconAnchor: [16, 32], popupAnchor: [0, -28] })
+    let safetyCircle = null, homeMarker = null, userMarker = null, hasAlerted = false
+    function setChipState (state) {
+      chipEl.classList.remove('status-chip--alert', 'status-chip--safe')
+      if (state === 'safe') { chipEl.classList.add('status-chip--safe'); chipEl.textContent = '安全範圍內' }
+      else if (state === 'alert') { chipEl.classList.add('status-chip--alert'); chipEl.textContent = '安全警示' }
+      else { chipEl.classList.add('status-chip--alert'); chipEl.textContent = '尚未設定' }
+    }
+    function clearWarning () { warningEl.hidden = true; warningEl.textContent = '' }
+    function showWarning (m) { warningEl.hidden = false; warningEl.textContent = m }
+    function renderNoHomeState () { setChipState('unset'); summaryEl.textContent = '尚未設定住家地址。'; detailEl.textContent = '請前往快速設定頁面儲存住家位置，以啟用安全範圍提醒。'; clearWarning() }
+    function renderPendingLocation () { setChipState('safe'); summaryEl.textContent = '正在取得目前位置…'; detailEl.textContent = '取得定位後將更新與住家的距離。'; clearWarning() }
+    function renderSafeState (distance) { setChipState('safe'); summaryEl.textContent = distance <= 30 ? '您目前在家中。' : '您目前在安全範圍內。'; detailEl.textContent = `距離住家約 ${metersToKmString(distance)}，安全範圍為 2 公里。`; clearWarning() }
+    function renderAlertState (distance) { setChipState('alert'); summaryEl.textContent = '您已超出安全範圍！'; detailEl.textContent = `距離住家約 ${metersToKmString(distance)}，請儘速通知家人或返回安全區域。`; if (!hasAlerted) { alert('您已超出 2 公里安全範圍！'); hasAlerted = true } clearWarning() }
+    function handleGeolocationError () { showWarning('無法取得目前位置（可能尚未授權定位）。') }
+    async function fetchHomeFromServer () {
+      try {
+        if (!window.aiCompanion?.fetchJson) return null
+        const meRes = await window.aiCompanion.fetchJson('users/me', { method: 'GET' })
+        const me = meRes?.user || meRes
+        const userId = Number(me?.user_id)
+        if (!Number.isFinite(userId)) return null
+        const locRes = await window.aiCompanion.fetchJson(`elder-locations/${userId}`, { method: 'GET' })
+        const loc = locRes?.location || locRes
+        if (loc?.address && Number.isFinite(loc.latitude) && Number.isFinite(loc.longitude)) {
+          // 把後端的住家位置同步到本機，讓長者端能感知家屬設定。
+          saveHome({ address: loc.address, lat: Number(loc.latitude), lon: Number(loc.longitude) })
+          return { address: loc.address, lat: Number(loc.latitude), lon: Number(loc.longitude) }
+        }
+      } catch (_) {}
+      return null
+    }
+
+    let home = getStoredHome()
+    if (!home) {
+      home = await fetchHomeFromServer()
+    }
+    if (!home) { renderNoHomeState() } else {
+      renderPendingLocation()
+      if (homeMarker) map.removeLayer(homeMarker); if (safetyCircle) map.removeLayer(safetyCircle)
+      homeMarker = L.marker([home.lat, home.lon], { title: '住家位置', icon: homeIcon }).addTo(map).bindPopup('住家位置')
+      safetyCircle = L.circle([home.lat, home.lon], { radius: SAFETY_RADIUS_METERS, color: '#f87171', fillColor: '#fca5a5', fillOpacity: 0.15, weight: 2, dashArray: '6 6' }).addTo(map)
+      const bounds = safetyCircle.getBounds(); map.fitBounds(bounds, { padding: [28, 28] })
+    }
+    function renderUserLocation (coords) {
+      if (userMarker) { map.removeLayer(userMarker); userMarker = null }
+      if (home && safetyCircle) {
+        const distance = haversineDistanceMeters(coords, [home.lat, home.lon])
+        const bounds = safetyCircle.getBounds().extend(coords); map.fitBounds(bounds, { padding: [28, 28] })
+        if (distance <= 30) { if (homeMarker) homeMarker.openPopup(); renderSafeState(distance); return }
+        userMarker = L.marker(coords, { title: '目前位置' }).addTo(map).bindPopup('目前位置'); userMarker.openPopup()
+        if (distance <= SAFETY_RADIUS_METERS) renderSafeState(distance); else renderAlertState(distance); return
+      }
+      userMarker = L.marker(coords, { title: '目前位置' }).addTo(map).bindPopup('目前位置'); userMarker.openPopup(); summaryEl.textContent = '已取得目前位置。'; detailEl.textContent = '請在快速設定頁面儲存住家地址，以啟用安全提醒。'; map.setView(coords, 15)
+    }
+    if ('geolocation' in navigator) { navigator.geolocation.getCurrentPosition((pos)=>renderUserLocation([pos.coords.latitude, pos.coords.longitude]), ()=>handleGeolocationError(), { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }) } else { showWarning('瀏覽器不支援定位功能。') }
+    if (!home) { map.setView([25.033, 121.5654], 13) }
+  </script>
+
+  <!-- 授權守門與使用者選單 -->
+  <script src="assets/js/config.js"></script>
+  <script>
+    (async function guardAuth() {
+      const API_BASE = (window.aiCompanion?.getApiBase?.() || 'http://localhost:3001').replace(/\/$/, '')
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
+        if (!res.ok) {
+          if (res.status === 401) {
+            try { window.aiCompanion?.clearAuthToken?.() } catch (_) {}
+          }
+          location.href = 'login.html?error=login_required'
+        }
+      } catch {
+        location.href = 'login.html?error=login_required'
+      }
+    })()
+  </script>
+  <script>
+    (function initUserMenu(){
+      const API_BASE = (window.aiCompanion?.getApiBase?.() || 'http://localhost:3001').replace(/\/$/, '')
+      const btn = document.getElementById('avatarBtn'), dd = document.getElementById('userDropdown'), initialsEl = document.getElementById('avatarInitials'), avatarImg = document.getElementById('avatarImage'), nameEl = document.getElementById('umName'), emailEl = document.getElementById('umEmail'), logoutBtn = document.getElementById('umLogout')
+      function toInitials(name){ if(!name) return 'U'; const parts=String(name).trim().split(/\s+/); return parts.length===1?parts[0].slice(0,2).toUpperCase():(parts[0][0]+parts[1][0]).toUpperCase() }
+      let announced = false
+      function announceUser(user){
+        if (!user || announced) return
+        announced = true
+        if (window.aiCompanion) {
+          window.aiCompanion.currentUser = user
+        }
+        try {
+          window.dispatchEvent(new CustomEvent('ai-companion:user-ready', { detail: user }))
+        } catch (_) {}
+      }
+      async function loadUser(){
+        try {
+          const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
+          if(!res.ok) return
+          const json = await res.json()
+          const user = json.user || {}
+          const display = user.full_name || user.username || user.email || '使用者'
+          const avatarUrl = user.avatar_url || user.avatar
+          if(nameEl) nameEl.textContent = display
+          if(emailEl) emailEl.textContent = user.email || ''
+          if(initialsEl) initialsEl.textContent = toInitials(display)
+          if(avatarImg){
+            if(avatarUrl){
+              avatarImg.src=avatarUrl
+              avatarImg.alt=`${display} 的頭像`
+              avatarImg.hidden=false
+              if(initialsEl) initialsEl.hidden=true
+            } else {
+              avatarImg.removeAttribute('src')
+              avatarImg.hidden=true
+              if(initialsEl) initialsEl.hidden=false
+            }
+          }
+          announceUser(user)
+        } catch {}
+      }
+      function openMenu(){ dd.hidden=false; btn.setAttribute('aria-expanded','true'); document.addEventListener('click', onDocClick); document.addEventListener('keydown', onEsc) }
+      function closeMenu(){ dd.hidden=true; btn.setAttribute('aria-expanded','false'); document.removeEventListener('click', onDocClick); document.removeEventListener('keydown', onEsc) }
+      function onDocClick(e){ if(!dd.contains(e.target) && !btn.contains(e.target)) closeMenu() }
+      function onEsc(e){ if(e.key==='Escape') closeMenu() }
+      if (btn) btn.addEventListener('click', (e)=>{ e.stopPropagation(); dd.hidden ? openMenu() : closeMenu() })
+      if (logoutBtn) logoutBtn.addEventListener('click', async ()=>{
+        try { await fetch(`${API_BASE}/api/auth/logout`, { method:'POST', credentials:'include' }) } catch {}
+        try { window.aiCompanion?.clearAuthToken?.() } catch (_) {}
+        location.href='login.html?error=login_required'
+      })
+      loadUser()
+    })()
+  </script>
+
+  <!-- 單一版本：重點提醒（渲染/新增/刪除/完成/通知） -->
+  <script>
+    (function initToday(){
+      const TAIPEI_TZ = 'Asia/Taipei'
+      const DAY_MS = 24*60*60*1000;
+      function todayRangeInTaipei(){ const now = new Date(); const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: TAIPEI_TZ, year:'numeric', month:'2-digit', day:'2-digit' }).format(now); const start = new Date(`${ymd}T00:00:00+08:00`); const end = new Date(start.getTime() + DAY_MS); return { from: start.toISOString(), to: end.toISOString(), ymd } }
+      function extendedEventRange(){ const base = todayRangeInTaipei(); const start = new Date(base.from); const extendedFrom = new Date(start.getTime() - DAY_MS); const extendedTo = new Date(start.getTime() + 7 * DAY_MS); return { from: extendedFrom.toISOString(), to: extendedTo.toISOString() } }
+
+      const relativeLabel = (eventDate) => {
+        const today = new Date()
+        const currentYmd = new Intl.DateTimeFormat('en-CA', { timeZone: TAIPEI_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(today)
+        const targetYmd = new Intl.DateTimeFormat('en-CA', { timeZone: TAIPEI_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(eventDate)
+        const todayDate = new Date(`${currentYmd}T00:00:00+08:00`)
+        const targetDate = new Date(`${targetYmd}T00:00:00+08:00`)
+        const diffDays = Math.round((targetDate - todayDate) / (24 * 60 * 60 * 1000))
+        if (diffDays === 0) return '今天'
+        if (diffDays === -1) return '昨天'
+        if (diffDays === 1) return '明天'
+        return `${targetYmd.slice(5, 7)}月${targetYmd.slice(8, 10)}日`
+      }
+
+      // Improved renderer: includes location, and provides 完成/刪除按鈕
+      async function renderTodayV2(){
+        const listEl = document.getElementById('today-list');
+        if (!listEl) return;
+        const range = extendedEventRange();
+        const qs = new URLSearchParams({ from: range.from, to: range.to }).toString();
+        try {
+          const data = await window.aiCompanion.fetchJson(`/events?${qs}`);
+          const events = Array.isArray(data?.events) ? data.events : [];
+          if (!events.length) { listEl.innerHTML = '<li><span>今天尚無提醒</span></li>'; return }
+          listEl.innerHTML = '';
+          for (const ev of events) {
+            const li = document.createElement('li');
+            const t = new Date(ev.start_time);
+            const hh = String(t.getHours()).padStart(2,'0');
+            const mm = String(t.getMinutes()).padStart(2,'0');
+            const time = `${hh}:${mm}`;
+            const dayLabel = relativeLabel(t);
+            const loc = ev.location ? ` ＠ ${String(ev.location)}` : '';
+            li.innerHTML = `<strong>${dayLabel} ${time}</strong><span>${(ev.title||'').toString()}${loc}</span><span style="margin-left:auto"></span><button class="btn secondary" data-done>完成</button><button class="btn secondary" data-del>刪除</button>`;
+            li.title = ev.description || '';
+            li.style.cursor='pointer';
+            li.addEventListener('click', async ()=>{ try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'PATCH', body: JSON.stringify({ status: !ev.status }) }); ev.status=!ev.status; li.style.opacity = ev.status ? '0.55' : '1' } catch {} });
+            li.querySelector('[data-done]').addEventListener('click', async (e)=>{ e.stopPropagation(); try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'PATCH', body: JSON.stringify({ status: true }) }); li.remove() } catch { alert('標記完成失敗，稍後再試') } });
+            li.querySelector('[data-del]').addEventListener('click', async (e)=>{ e.stopPropagation(); if (!confirm('確定刪除此提醒？')) return; try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'DELETE' }); li.remove() } catch { alert('刪除失敗，稍後再試') } });
+            if (ev.status) li.style.opacity='0.55';
+            listEl.appendChild(li)
+          }
+        } catch (error) {
+          listEl.innerHTML = '<li><span>載入提醒失敗，稍後再試</span></li>';
+          console.warn('[today events] load failed', error)
+        }
+      }
+      async function renderToday(){
+        const listEl = document.getElementById('today-list');
+        if (!listEl) return;
+        const range = extendedEventRange();
+        const qs = new URLSearchParams({ from: range.from, to: range.to }).toString();
+        try {
+          const data = await window.aiCompanion.fetchJson(`/events?${qs}`);
+          const events = Array.isArray(data?.events) ? data.events : [];
+          if (!events.length) { listEl.innerHTML = '<li><span>今天尚無提醒</span></li>'; return }
+          listEl.innerHTML = '';
+          for (const ev of events) {
+            const li = document.createElement('li');
+            const t = new Date(ev.start_time);
+            const hh = String(t.getHours()).padStart(2,'0');
+            const mm = String(t.getMinutes()).padStart(2,'0');
+            const time = `${hh}:${mm}`;
+            const dayLabel = relativeLabel(t);
+            li.innerHTML = `<strong>${dayLabel} ${time}</strong><span>${(ev.title||'').toString()}</span><button class="btn secondary" data-del style="margin-left:auto">刪除</button>`;
+            li.title = ev.description || '';
+            li.style.cursor='pointer';
+            li.addEventListener('click', async ()=>{ try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'PATCH', body: JSON.stringify({ status: !ev.status }) }); ev.status=!ev.status; li.style.opacity = ev.status ? '0.55' : '1' } catch {} });
+            li.querySelector('[data-del]').addEventListener('click', async (e)=>{ e.stopPropagation(); if (!confirm('確定刪除此提醒？')) return; try { await window.aiCompanion.fetchJson(`/events/${ev.id}`, { method:'DELETE' }); li.remove() } catch { alert('刪除失敗，稍後再試') } });
+            if (ev.status) li.style.opacity='0.55';
+            listEl.appendChild(li)
+          }
+        } catch (error) {
+          listEl.innerHTML = '<li><span>載入提醒失敗，稍後再試</span></li>';
+          console.warn('[today events] load failed', error)
+        }
+      }
+      function scheduleNotifications(events){ if (!('Notification' in window)) return; if (Notification.permission !== 'granted') { Notification.requestPermission().catch(()=>{}) } const now = Date.now(); for (const ev of events) { const target = ev.reminder_time || ev.start_time; if (!target) continue; const at = Date.parse(target), delay = at - now; if (Number.isFinite(delay) && delay > 0 && delay <= 24*60*60*1000) { setTimeout(()=>{ try { if (Notification.permission==='granted') new Notification(ev.title || '提醒', { body: ev.description || '時間到了', silent: false }) } catch {} }, delay) } } }
+      async function loadAndScheduleToday(){ const range = todayRangeInTaipei(); const qs = new URLSearchParams({ from: range.from, to: range.to }).toString(); try { const data = await window.aiCompanion.fetchJson(`/events?${qs}`); const events = Array.isArray(data?.events) ? data.events : []; scheduleNotifications(events) } catch {} }
+      function bindAddForm(){
+        const toggleBtn = document.getElementById('addEventBtn')
+        const form = document.getElementById('addEventForm')
+        if (!toggleBtn || !form) {
+          console.warn('[today events] add form not found, skip binding')
+          return
+        }
+
+        const cancelBtn = document.getElementById('cancelAdd')
+        const dateEl = document.getElementById('evtDate')
+        const timeEl = document.getElementById('evtTime')
+        const remindEl = document.getElementById('evtRemind')
+
+        const range = todayRangeInTaipei()
+        if (dateEl) dateEl.value = range.ymd
+        if (timeEl) timeEl.value = '09:00'
+
+        toggleBtn.addEventListener('click', () => {
+          form.style.display = form.style.display === 'none' ? 'block' : 'none'
+        })
+
+        if (cancelBtn) {
+          cancelBtn.addEventListener('click', () => {
+            form.style.display = 'none'
+          })
+        }
+
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault()
+          const title = document.getElementById('evtTitle')?.value.trim()
+          const category = document.getElementById('evtCategory')?.value || null
+          const desc = document.getElementById('evtDesc')?.value.trim() || null
+          const date = dateEl?.value
+          const time = timeEl?.value
+          const rtime = remindEl?.value
+          if (!title || !date || !time) {
+            alert('請填寫標題/日期/時間')
+            return
+          }
+
+          const startIso = `${date}T${time}:00+08:00`
+          const remindIso = rtime ? `${date}T${rtime}:00+08:00` : startIso
+
+          try {
+            await window.aiCompanion.fetchJson('/events', {
+              method: 'POST',
+              body: JSON.stringify({
+                title,
+                category,
+                description: desc,
+                start_time: startIso,
+                reminder_time: remindIso
+              })
+            })
+            form.reset()
+            form.style.display = 'none'
+            await renderTodayV2()
+            await loadAndScheduleToday()
+          } catch {
+            alert('新增失敗，稍後再試')
+          }
+        })
+      }
+      renderTodayV2(); loadAndScheduleToday(); bindAddForm()
+    })()
+  </script>
+  <script>
+    (function enhanceReminderFilter(){
+      const DAY_MS = 24*60*60*1000;
+      const TAIPEI_TZ = 'Asia/Taipei';
+      document.addEventListener('DOMContentLoaded', () => {
+        const listEl = document.getElementById('today-list');
+        if (!listEl) return;
+
+        const card = listEl.closest('.card');
+        if (!card) return;
+
+        let filterInput = document.getElementById('reminderFilterDate');
+        if (!filterInput) {
+          const row = document.createElement('div');
+          row.className = 'reminder-filter-row';
+          const label = document.createElement('label');
+          label.htmlFor = 'reminderFilterDate';
+          label.textContent = '日期';
+          filterInput = document.createElement('input');
+          filterInput.type = 'date';
+          filterInput.id = 'reminderFilterDate';
+          const clearBtn = document.createElement('button');
+          clearBtn.type = 'button';
+          clearBtn.className = 'reminder-filter-clear';
+          clearBtn.textContent = '清除日期（回到預設）';
+          row.appendChild(label);
+          row.appendChild(filterInput);
+          row.appendChild(clearBtn);
+          card.insertBefore(row, listEl);
+          const helper = card.querySelector('.helper-text');
+          if (helper) helper.textContent = '選擇某日會顯示該日提醒，清除日期則回到「昨日未完成 + 今日與明日」。';
+          clearBtn.addEventListener('click', () => {
+            filterInput.value = '';
+            applyFilter();
+          });
+        }
+
+        const fmt = new Intl.DateTimeFormat('en-CA', {
+          timeZone: TAIPEI_TZ,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+
+        const computeBaseDates = () => {
+          const now = new Date();
+          const todayYmd = fmt.format(now);
+          const todayDate = new Date(`${todayYmd}T00:00:00+08:00`);
+          const yesterdayYmd = fmt.format(new Date(todayDate.getTime() - DAY_MS));
+          const tomorrowYmd = fmt.format(new Date(todayDate.getTime() + DAY_MS));
+          return { todayYmd, yesterdayYmd, tomorrowYmd };
+        };
+
+        const getYmdFromLabel = (label) => {
+          if (!label) return null;
+          label = label.trim();
+          const { todayYmd, yesterdayYmd, tomorrowYmd } = computeBaseDates();
+          if (label.startsWith('今天')) return todayYmd;
+          if (label.startsWith('昨天')) return yesterdayYmd;
+          if (label.startsWith('明天')) return tomorrowYmd;
+          const m = label.match(/(\d{1,2})月(\d{1,2})日/);
+          if (!m) return null;
+          const now = new Date();
+          const year = now.getFullYear();
+          const mm = String(Number(m[1])).padStart(2, '0');
+          const dd = String(Number(m[2])).padStart(2, '0');
+          return `${year}-${mm}-${dd}`;
+        };
+
+        const applyFilter = () => {
+          const { todayYmd, yesterdayYmd, tomorrowYmd } = computeBaseDates();
+          const selected = filterInput && filterInput.value ? filterInput.value : null;
+          const items = Array.from(listEl.querySelectorAll('li'));
+          items.forEach(li => {
+            const strong = li.querySelector('strong');
+            if (!strong) return;
+            const label = strong.textContent || '';
+            const ymd = getYmdFromLabel(label);
+            if (!ymd) {
+              li.style.display = 'none';
+              return;
+            }
+            let show = false;
+            if (selected) {
+              show = (ymd === selected);
+            } else {
+              const completed = (li.style.opacity === '0.55');
+              if (ymd === todayYmd || ymd === tomorrowYmd) show = true;
+              else if (ymd === yesterdayYmd && !completed) show = true;
+            }
+            li.style.display = show ? '' : 'none';
+          });
+        };
+
+        applyFilter();
+
+        if (filterInput) {
+          filterInput.addEventListener('change', () => {
+            applyFilter();
+          });
+        }
+
+        try {
+          const obs = new MutationObserver(() => {
+            applyFilter();
+          });
+          obs.observe(listEl, { childList: true, subtree: false, attributes: true, attributeFilter: ['style'] });
+        } catch (_) {}
+      });
+    })();
+  </script>
+</body>
+</html>
