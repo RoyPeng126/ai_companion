@@ -272,31 +272,39 @@ footer {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
   color: #fff;
   padding: 2rem;
-  border-radius: 24px;
+  border-radius: 16px;
   display: grid;
   gap: 1.5rem;
+  justify-items: flex-start;
   margin-bottom: 2rem;
 }
 
 .hero .hero-copy {
-  max-width: 560px;
+  max-width: 760px;
   width: 100%;
   display: grid;
   gap: 0.75rem;
 }
 
-.hero .hero-copy .status-pill,
-.hero .hero-copy h2 {
+.hero .hero-copy .status-pill {
   width: 100%;
+  max-width: 100%;
+  justify-content: center;
 }
 
 .hero h2 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-size: clamp(2.3rem, 4.8vw, 3.1rem);
+}
+
+.hero .btn {
+  width: 100%;
+  max-width: 760px;
+  align-self: flex-start;
 }
 
 .hero p {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   margin: 0;
   line-height: 1.6;
 }
@@ -1698,6 +1706,7 @@ footer {
 .grid { display: grid; gap: 24px; }
 .grid.two   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.chat-grid { grid-template-columns: 1fr; max-width: 760px; margin: 0 auto; }
 
 .card {
   padding: 16px;
@@ -2268,4 +2277,15 @@ body{
 /* 確保被 hidden 的卡片真會消失，即使其他樣式覆蓋 display */
 .card[hidden] {
   display: none !important;
+}
+
+.hero {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: #fff;
+  padding: 2rem;
+  border-radius: 24px;
+  display: grid;
+  gap: 1.5rem;
+  justify-items: flex-start;
+  margin-bottom: 2rem;
 }
