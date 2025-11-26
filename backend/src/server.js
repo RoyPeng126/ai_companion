@@ -24,16 +24,10 @@ const app = express()
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const frontendDir = path.resolve(__dirname, '../../frontend')
-const defaultOrigins = [
-  'http://localhost:3000'
-]
 
-const allowedOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
-  : defaultOrigins
-
+// 開放 CORS：允許任意來源（含 Render）攜帶 cookie
 app.use(cors({
-  origin: allowedOrigins.length ? allowedOrigins : '*',
+  origin: (_origin, callback) => callback(null, true),
   credentials: true
 }))
 app.use(bodyParser.json({ limit: '30mb' }))
