@@ -1253,7 +1253,7 @@
     const actions = chatElement.querySelector('.chat-actions');
     if (actions) {
       const addTextBtn = document.createElement('button');
-      addTextBtn.className = 'btn secondary';
+      addTextBtn.className = 'btn secondary chat-action-wide';
       addTextBtn.type = 'button';
       addTextBtn.id = 'add-reminder-text';
       addTextBtn.textContent = '加入備忘錄（文字）';
@@ -1263,10 +1263,9 @@
       });
 
       const addVoiceBtn = document.createElement('button');
-      addVoiceBtn.className = 'btn secondary';
+      addVoiceBtn.className = 'btn secondary chat-action-wide';
       addVoiceBtn.type = 'button';
       addVoiceBtn.id = 'add-reminder-voice';
-      addVoiceBtn.style.marginLeft = '8px';
       addVoiceBtn.textContent = '加入備忘錄（最近語音）';
       addVoiceBtn.addEventListener('click', async () => {
         const latest = (memos && memos.length) ? (memos[0].text || '') : '';
@@ -1349,8 +1348,8 @@
         }
       });
 
-      actions.insertBefore(addTextBtn, sendButton);
-      actions.insertBefore(addVoiceBtn, sendButton);
+      actions.appendChild(addTextBtn);
+      actions.appendChild(addVoiceBtn);
     }
   } catch (_) {}
 
