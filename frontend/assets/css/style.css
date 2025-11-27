@@ -45,9 +45,14 @@ footer {
 }
 
 .app-shell {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 450px;
   margin: 0 auto;
   padding: 1.5rem;
+  background: #fff;
+  border-radius: 32px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
 }
 
 .top-bar {
@@ -1719,6 +1724,7 @@ section { margin-block: 24px; }
 
 @media (max-width: 768px) {
   .grid.two, .grid.three { grid-template-columns: 1fr; }
+  .app-shell { border-radius: 28px; box-shadow: 0 10px 32px rgba(0,0,0,0.12); }
 }
 
 

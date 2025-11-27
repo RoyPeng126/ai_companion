@@ -75,9 +75,42 @@
       <section class="grid two" aria-label="快速操作">
         <article class="card">
           <h3>重點提醒</h3>
-          <ul class="list" id="today-list"></ul>
-          
+          <div class="reminder-actions">
+            <button class="btn secondary" type="button" id="addEventBtn">新增提醒</button>
+          </div>
+          <form id="addEventForm" style="display:none; margin-top:12px;" class="reminder-form">
+            <div class="form-row">
+              <label for="evtTitle">標題</label>
+              <input type="text" id="evtTitle" name="title" required>
+            </div>
+            <div class="form-row">
+              <label for="evtCategory">分類（可選）</label>
+              <input type="text" id="evtCategory" name="category" placeholder="用藥 / 回診 / 生活">
+            </div>
+            <div class="form-row">
+              <label for="evtDesc">描述（可選）</label>
+              <textarea id="evtDesc" name="description" rows="2" placeholder="可填寫備註、地址或聯絡人"></textarea>
+            </div>
+            <div class="form-row grid two">
+              <div>
+                <label for="evtDate">日期</label>
+                <input type="date" id="evtDate" name="date" required>
+              </div>
+              <div>
+                <label for="evtTime">時間</label>
+                <input type="time" id="evtTime" name="time" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="evtRemind">提醒時間（可選，預設同開始時間）</label>
+              <input type="time" id="evtRemind" name="remind">
+            </div>
+            <div class="form-actions">
+              <button class="btn secondary" type="button" id="cancelAdd">取消</button>
+              <button class="btn primary" type="submit">儲存</button>
+            </div>
           </form>
+          <ul class="list" id="today-list"></ul>
           <p class="helper-text">提醒來源可由長者語音新增或家屬遠端同步。</p>
         </article>
 
@@ -211,6 +244,8 @@
     <script src="assets/js/facebook-feed.js"></script>
     <script src="assets/js/friend-forum.js"></script>
     <script src="assets/js/settings.js"></script>
+    <script src="assets/js/chat.js"></script>
+    <script src="assets/js/companion-style.js"></script>
     <script src="assets/js/reminders.js"></script>
     <script src="assets/js/reminder-policies.js"></script>
     <script src="assets/js/care-elder-invitations.js"></script>
