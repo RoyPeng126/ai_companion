@@ -1,18 +1,20 @@
 # 智護生活：AI 伴你
 
-智護生活是一套為長者、家屬與照護者打造的 AI 情感陪伴原型，整合語音聊天、備忘錄排程、健康指標與安全圍欄示範高齡友善的智慧照護體驗。前端採行動優先的靜態站點，後端以 Node.js/Express 暴露 REST API 與語音服務整合，方便延伸為真實服務。
+智護生活是一套為長者、家屬與照護者打造的 AI 情感陪伴原型，整合語音聊天、備忘錄排程、照護邀請、興趣收藏、健康指標與安全圍欄，示範高齡友善的智慧照護體驗。前端採行動優先的靜態站點，後端以 Node.js/Express 暴露 REST API 與語音服務整合，方便延伸為真實服務。
 
 ## 專案目錄
-- `frontend/`：靜態網頁與模組化腳本，含導覽、陪聊、排行榜、安全地圖、社群與離線指引。
-- `backend/`：Express 伺服器、Gemini 聊天、雅婷語音轉文字與語音合成串接、PostgreSQL 存取與地理圍欄通知。
+- `frontend/`：靜態網頁與模組化腳本，含導覽、陪聊、排行榜、照護總覽、陪伴風格、安全地圖、社群與離線指引。
+- `backend/`：Express 伺服器、Gemini 聊天、雅婷語音轉文字與語音合成串接、照護邀請與興趣庫 API、PostgreSQL 存取與地理圍欄通知。
 
 ## 前端體驗
 - AI 陪聊與語音備忘錄（`index.html`、`assets/js/chat.js`）：支援文字 / 語音輸入、語音轉文字、Gemini 回覆與 TTS 播放，並在 `localStorage` 儲存最多 20 筆語音備忘錄。
-- 備忘錄快速排程（`assets/js/chat.js`、`assets/js/reminders.js`）：一鍵將文字或最近語音內容轉成 `/api/events` 事件，包含本地時間解析與標題精煉。
+- 備忘錄快速排程（`assets/js/chat.js`、`assets/js/reminders.js`）：一鍵將文字或最近語音內容轉成 `/api/events` 事件，包含本地時間解析、類別標記（運動 / 服藥 / 就醫 / 聊天）與標題精煉，供排行計分使用。
 - 身分化導覽流程（`welcome.html` → `register-role.html` → `registration.html` → `selection.html` → `setting.html`）：依長者 / 家屬 / 社工提供不同提示並落地到設定頁。
 - 語音與語者設定（`setting.html`、`assets/js/settings.js`）：調整語系與雅婷 TTS 聲線，會同步更新聊天 persona 與語音參數。
-- 健康排行榜（`ranking.html`、`assets/js/ranking.js`）：使用示範資料呈現步數 / 服藥 / 聊天指標，可依需求改接 `/api/ranking`。
-- 安全守護與家族資源（`index.html`、`setting.html`、`assets/js/safety-map.js`、`guide.html`、`forum.html`）：Leaflet 地圖搭配 Nominatim 住址搜尋、離線求助指引與簡易社群。
+- 照護邀請與總覽（`care-dashboard.html`、`assets/js/care-dashboard.js`、`assets/js/care-elder-invitations.js`）：家屬 / 社工可邀請長者加入關注名單（最多 3 位），長者在首頁或功能頁即可接受 / 拒絕，並在照護總覽同步查看每日備忘錄與安全紀錄。
+- 陪伴風格與興趣收藏（`selection.html`、`function.html`、`assets/js/companion-style.js`）：長輩或家屬以文字 / 16 kHz PCM 語音留下興趣，並抓取最近聊天摘要作為陪伴風格參考。
+- 健康排行榜（`ranking.html`、`assets/js/ranking.js`）：以 `/api/ranking/monthly` 顯示月累積照護 / 自理分數與成就，支援全站 / 好友圈篩選，可按下「同步」呼叫 `/rebuild` 端點重算。
+- 安全守護與家族資源（`index.html`、`setting.html`、`assets/js/safety-map.js`、`guide.html`、`forum.html`）：Leaflet 地圖搭配 Nominatim 住址搜尋，住家座標可寫回 `/api/elder-locations` 讓長輩端同步，並提供離線求助指引與簡易社群。
 - 親友最新動態（`index.html`、`assets/js/facebook-feed.js`）：將授權的 Facebook 親友貼文整理在首頁卡片，可一鍵刷新並提供聊天模組引用。
 - 好友社群活動（`index.html`、`assets/js/friend-forum.js`、`setting.html`、`assets/js/elder-link.js`）：長者以手機註冊後取得 User ID，家屬可在設定頁綁定長者，長輩之間可透過手機加好友並在首頁論壇發起好友限定活動。
 - 家族暖心語音（`assets/js/chat.js`）：長者只要說出指定口令（例如「我要加好友，電話是……」），就能透過後端自動呼叫 `/friends`、`/friend-events`、`/events` 等 API 完成好友、活動、提醒等操作。
@@ -31,8 +33,11 @@
 - 身份驗證（`routes/auth.js`）：註冊、登入、登出、`/me` 查詢與 `change-password`，採 HttpOnly Cookie JWT 與 `users` 資料表。
 - 使用者資料（`routes/users.js`）：`GET/PATCH /api/users/me` 更新暱稱、聯絡資訊與年齡，具名額度限制保護。
 - 聊天與語音（`routes/chat.js`、`services/*`）：語音先透過雅婷即時 WebSocket STT，再交給 Gemini 產生回覆，最後以雅婷短語音合成回傳音訊；`/chat/refine-title` 供備忘錄標題精煉。
-- 提醒事件（`routes/events.js`）：`GET/POST/PATCH/DELETE /api/events` 操作 `user_events`，僅允許本人或 owner 操作。
-- 健康與安全（`routes/ranking.js`、`routes/geofence.js`）：排行榜改寫 `data/healthMetrics.json` 示範倉；地理圍欄計算距離並用記憶體通知中心暫存告警。
+- 提醒事件（`routes/events.js`）：`GET/POST/PATCH/DELETE /api/events` 操作 `user_events`，僅允許本人或 owner 操作，並以任務類別供排行計分。
+- 照護邀請（`routes/care.js`）：家屬 / 社工以電話或 email 邀請長輩加入關注名單（上限 3 位），長者可接受 / 拒絕後建立 `care_relationships`，並可批次為長輩寫入每日備忘錄。
+- 陪伴風格（`routes/companionStyles.js`、`services/companionStyleService.js`）：長輩興趣與聊天摘要會寫入 `companion_styles`，支援語音轉文字匯入。
+- 長輩住家位置（`routes/elderLocations.js`）：同家族成員可查詢 / 更新長輩的住址與座標，供安全地圖同步。
+- 健康與安全（`routes/ranking.js`、`routes/geofence.js`）：排行榜從 `user_events` 與 `score_periods` 加總每日 / 月分數並帶入成就；地理圍欄計算距離並用記憶體通知中心暫存告警。
 - Facebook 親友貼文（`routes/facebook.js`、`routes/familyFeed.js`、`services/facebookService.js`）：使用 Graph API 取得授權家人（user_posts）及粉絲專頁貼文，並支援手動分享資料，提供前端卡片與聊天背景知識使用，內建快取避免頻繁呼叫。
 - 長者綁定與好友圈（`routes/users.js`、`routes/friends.js`、`routes/friendEvents.js`）：`POST /api/users/link-elder` 以長者 User ID + 手機完成家屬指向（可同時綁 3 位長者）、`/api/friends` 系列管理好友邀請/接受、`/api/friend-events` 發起好友限定活動並追蹤參加狀態。
 
@@ -46,28 +51,41 @@ GET  /api/auth/me                                 # 取得目前使用者
 POST /api/auth/change-password                    # 變更密碼
 GET  /api/users/me                                # 讀取個人檔案
 PATCH /api/users/me                               # 更新個人檔案
+GET  /api/care/invitations                        # 家屬/社工查詢已送出邀請；長者帶 direction=received
+POST /api/care/invitations                        # 家屬/社工以電話或 email 邀請長者
+POST /api/care/invitations/:id/accept             # 長者接受邀請並建立關係
+POST /api/care/invitations/:id/reject             # 長者拒絕邀請
+GET  /api/care/elders                             # 家屬/社工列出已關注的長者
+GET  /api/care/caregivers                         # 長者列出關注自己的家屬/社工
+GET  /api/care/elders/:elderId/events             # 取得指定長者的備忘錄（需關係）
+POST /api/care/elders/:elderId/events/bulk        # 家屬/社工批次建立每日備忘錄
 POST /api/chat                                    # 語音/文字對話並回傳 TTS
 POST /api/chat/refine-title                       # 將口語文字精煉成備忘錄標題
+GET  /api/companion-styles                        # 取得長輩興趣與聊天摘要（同家族）
+POST /api/companion-styles                        # 文字新增興趣
+POST /api/companion-styles/voice                  # 語音轉文字後新增興趣
 GET  /api/facebook/posts                          # 取得與呼叫者同家庭的 Facebook 授權貼文摘要
 GET  /api/facebook/auth/url                       # 取得 Facebook OAuth 登入網址（需登入家屬）
 GET  /api/facebook/auth/callback                  # Facebook OAuth callback（供 Facebook 呼叫）
 GET  /api/family-feed/for-elder/:elderId          # 聚合指定長者的授權貼文＋手動分享
 GET  /api/users/linked-elder                      # 查詢目前使用者綁定的長者
 POST /api/users/link-elder                        # 以長者 User ID + 手機完成 owner 連結（最多 3 位）
-GET  /api/friends                                  # 列出已接受的好友
-GET  /api/friends/requests                         # 列出收到/送出的好友邀請
-POST /api/friends/requests                         # 以手機送出好友邀請（限長者）
-PATCH /api/friends/requests/:id                    # 接受、婉拒或取消邀請
-GET  /api/friend-events                            # 讀取好友圈活動
-POST /api/friend-events                            # 長者發起好友活動
-POST /api/friend-events/:id/rsvp                   # 好友回覆是否參加活動
+GET  /api/elder-locations/:elderId                # 查詢長輩住家座標（同家族）
+PUT  /api/elder-locations/:elderId                # 更新長輩住家座標
+GET  /api/friends                                 # 列出已接受的好友
+GET  /api/friends/requests                        # 列出收到/送出的好友邀請
+POST /api/friends/requests                        # 以手機送出好友邀請（限長者）
+PATCH /api/friends/requests/:id                   # 接受、婉拒或取消邀請
+GET  /api/friend-events                           # 讀取好友圈活動
+POST /api/friend-events                           # 長者發起好友活動
+POST /api/friend-events/:id/rsvp                  # 好友回覆是否參加活動
 GET  /api/events                                  # 依時間範圍列出事件
 POST /api/events                                  # 新增事件（owner 預設為自己）
 PATCH /api/events/:id                             # 更新事件，僅限相關人
 DELETE /api/events/:id                            # 刪除事件
-GET  /api/ranking                                 # 讀取健康指標排行
-GET  /api/ranking/:userId                         # 取得單一使用者指標
-POST /api/ranking/sync                            # 匯入/更新指標資料
+POST /api/ranking/rebuild/daily                   # 依 `user_events` 重算每日分數
+POST /api/ranking/rebuild/monthly                 # 聚合本月分數並寫入成就
+GET  /api/ranking/monthly                         # 取得指定月排行（scope=global|friends）
 POST /api/geofence/check                          # 檢查位置是否超出安全範圍
 GET  /api/geofence/notifications/:familyId        # 讀取特定家族通知
 ```
@@ -76,14 +94,14 @@ GET  /api/geofence/notifications/:familyId        # 讀取特定家族通知
 ### 需求
 - Node.js 18+（原生 `fetch` 與頂層 await）。
 - pnpm 8+。
-- PostgreSQL（需建立 `users` 與 `user_events` 表）。
+- PostgreSQL（需建立下方列出的表）。
 - 雅婷 STT/TTS 服務與 Gemini API 金鑰。
 
 ### 安裝與啟動
 1. 安裝依賴：`cd backend && pnpm install`，接著 `cd ../frontend && pnpm install`（僅提供啟動靜態伺服器）。
 2. 啟動後端：`cd backend && pnpm run dev`（預設 `http://localhost:3001`）。
 3. 啟動前端：`cd frontend && pnpm run dev` 以 `serve` 開啟 `http://localhost:3000`。
-4. 預設前端會向 `http://localhost:3001/api` 發送請求，可於 `frontend/assets/js/app.js` 調整 `apiBaseUrl`。
+4. 前端預設向同一網域的 `/api` 發送請求，可在 `localStorage.AI_COMPANION_API_BASE` 設定後端位址，或於 `frontend/assets/js/app.js` 調整預設來源。
 
 ### 環境變數
 | 類別 | 變數 | 預設值 | 說明 |
@@ -186,6 +204,81 @@ CREATE TABLE user_events (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE care_invitations (
+  id SERIAL PRIMARY KEY,
+  elder_id INTEGER NOT NULL REFERENCES users(user_id),
+  caregiver_id INTEGER NOT NULL REFERENCES users(user_id),
+  elder_user_id_snapshot INTEGER,
+  match_phone TEXT,
+  match_email TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','accepted','rejected','cancelled')),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  responded_at TIMESTAMPTZ
+);
+
+CREATE TABLE care_relationships (
+  id SERIAL PRIMARY KEY,
+  elder_id INTEGER NOT NULL REFERENCES users(user_id),
+  caregiver_id INTEGER NOT NULL REFERENCES users(user_id),
+  role TEXT NOT NULL DEFAULT 'family',
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','paused','ended')),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT care_relationships_unique UNIQUE (elder_id, caregiver_id)
+);
+
+CREATE TABLE companion_styles (
+  id SERIAL PRIMARY KEY,
+  elder_user_id INTEGER NOT NULL REFERENCES users(user_id),
+  elder_name TEXT,
+  elder_gender TEXT,
+  interest TEXT,
+  chat_message TEXT,
+  message_role TEXT,
+  entry_type TEXT NOT NULL CHECK (entry_type IN ('interest','chat')),
+  created_by INTEGER,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE score_periods (
+  user_id INTEGER NOT NULL REFERENCES users(user_id),
+  period_type TEXT NOT NULL CHECK (period_type IN ('day','month')),
+  period_start DATE NOT NULL,
+  care_tasks_score INTEGER DEFAULT 0,
+  self_tasks_score INTEGER DEFAULT 0,
+  bonus_points INTEGER DEFAULT 0,
+  total_score INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (user_id, period_type, period_start)
+);
+
+CREATE TABLE user_achievements (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(user_id),
+  key TEXT NOT NULL,
+  period_start DATE NOT NULL,
+  bonus_points INTEGER DEFAULT 0,
+  meta JSONB,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT user_achievements_unique UNIQUE (user_id, key, period_start)
+);
+
+CREATE TABLE elder_locations (
+  id SERIAL PRIMARY KEY,
+  elder_user_id INTEGER UNIQUE NOT NULL REFERENCES users(user_id),
+  address TEXT NOT NULL,
+  latitude DOUBLE PRECISION NOT NULL,
+  longitude DOUBLE PRECISION NOT NULL,
+  county TEXT,
+  district TEXT,
+  detail TEXT,
+  created_by INTEGER,
+  updated_by INTEGER,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE oauth_facebook_tokens (
   user_id INTEGER PRIMARY KEY REFERENCES users(user_id),
   access_token TEXT NOT NULL,
@@ -272,11 +365,9 @@ COMMIT;
 - 安全地圖呼叫 Nominatim 公共 API，部署時請遵循服務使用政策並考慮快取。
 
 ## 最新更新
-- 引入 `/api/events` 系列端點，支援長者語音備忘錄轉成排程提醒。
-- 聊天流程整合雅婷 WebSocket STT、Gemini 回覆與雅婷短語音合成。
-- 前端聊天模組新增語音備忘錄清單、快速新增備忘錄與 persona 同步。
-- 語音設定頁支援國語 / 台語語者切換並同步調整聊天語氣。
-- 安全地圖重構為可搜尋、儲存住址與檢查半徑的 Leaflet 介面。
-- Facebook 親友貼文改為授權家人／粉絲專頁／手動分享的聚合流程，新增 `/api/family-feed/for-elder/:elderId` 並強化 `/api/facebook/posts` 的權限檢查。
-- 新增 `pnpm encrypt:fb-token` 指令以 AES-256-GCM 產生可寫入 `oauth_facebook_tokens` 的加密值。
-- README 重新整理現有功能與環境需求，便於開發與部署。
+- 新增 `/api/care/*` 照護邀請與關注關係，家屬 / 社工最多管理三位長者，長輩可在前端直接同意或婉拒。
+- 照護總覽支援批次寫入每日備忘錄，搭配提醒類別標記供排行計分與任務追蹤。
+- 陪伴風格興趣庫（`/api/companion-styles`）可用文字或 16 kHz PCM 語音新增，並抓取聊天摘要供陪伴口吻參考。
+- 排行榜改為依 `user_events` → `score_periods` → `user_achievements` 的分數模型，提供好友圈篩選與 `/rebuild` 端點手動重算。
+- 住家位置改寫入 `/api/elder-locations`，安全地圖會自動同步長輩住址與安全半徑提醒。
+- README 同步現有功能、API 與資料表，方便接續開發與部署。
