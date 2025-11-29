@@ -100,28 +100,19 @@
         </div>
       </div>
 
-      <section class="lb-list" aria-label="完整名次">
+      <section class="lb-list" aria-label="完整名次" hidden>
         <ol id="lb-list" class="lb-list__items"></ol>
       </section>
 
       <section class="lb-foot" aria-label="同步與健康洞察">
         <div class="sync-box">
           <button class="btn primary" type="button" id="sync-btn">立即同步</button>
-          <p class="helper-text">同步後會更新本月分數與排行榜。</p>
         </div>
 
         <div class="insight-box">
-          <button id="insight-toggle"
-                  class="btn secondary pill"
-                  aria-expanded="false"
-                  aria-controls="insight-panel">
-            健康洞察
-          </button>
-
           <article id="insight-panel" class="insight-card" hidden>
             <header>
               <h3 class="sr-only">健康洞察</h3>
-              <a href="guide.html" class="link">查看指南</a>
             </header>
             <ul>
               <li><strong id="insight-best">—</strong> 表現最佳（本月）</li>

@@ -111,7 +111,6 @@
             </div>
           </form>
           <ul class="list" id="today-list"></ul>
-          <p class="helper-text">提醒來源可由長者語音新增或家屬遠端同步。</p>
         </article>
 
         <article class="card" id="safety-card">
@@ -123,7 +122,6 @@
             <p class="map-feedback map-feedback--error" id="safetyWarning" hidden></p>
           </div>
           <div id="safety-map" aria-label="安全地圖"></div>
-          <p class="helper-text">外出時會偵測與住家的距離，超過 2 公里將通知家屬。</p>
         </article>
       </section>
 
@@ -131,9 +129,7 @@
         <article class="card friend-forum-card" data-friend-forum aria-live="polite">
           <div class="card-header">
             <div>
-              <p class="status-pill">好友限定</p>
               <h3>社群論壇活動</h3>
-              <p class="helper-text">互相成為好友後，才能看到活動並回覆是否參加。</p>
             </div>
             <button class="btn secondary" type="button" data-friend-refresh>重新整理</button>
           </div>
@@ -161,7 +157,6 @@
                 <label for="friendPhone">輸入好友手機號碼</label>
                 <input type="tel" id="friendPhone" name="phone" inputmode="numeric" placeholder="09xxxxxxxx" required>
                 <button class="btn primary" type="submit">送出邀請</button>
-                <p class="helper-text">每位長輩最多可加入 10 位好友。</p>
               </form>
             </section>
 
@@ -580,8 +575,6 @@
           row.appendChild(filterInput);
           row.appendChild(clearBtn);
           card.insertBefore(row, listEl);
-          const helper = card.querySelector('.helper-text');
-          if (helper) helper.textContent = '選擇某日會顯示該日提醒，清除日期則回到「昨日未完成 + 今日與明日」。';
           clearBtn.addEventListener('click', () => {
             filterInput.value = '';
             applyFilter();

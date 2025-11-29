@@ -22,6 +22,12 @@ body {
   color: var(--text);
   background: linear-gradient(135deg, var(--bg) 0%, #ffffff 60%);
   min-height: 100vh;
+  font-size: 36px;
+  line-height: 1.6;
+}
+
+body, input, select, textarea, button {
+  font-size: 36px;
 }
 
 a {
@@ -665,7 +671,7 @@ textarea::placeholder {
 }
 
 .helper-text {
-  font-size: 0.9rem;
+  font-size: 2rem;
   color: var(--muted);
 }
 
@@ -2184,7 +2190,7 @@ body{
   border-radius: 999px;
   border: 1px solid rgba(15, 23, 42, 0.15);
   padding: 0.65rem 1rem;
-  font-size: 1rem;
+  font-size: 1.5rem;
 }
 
 .friend-request {
@@ -2232,7 +2238,7 @@ body{
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.08);
-  font-size: 0.9rem;
+  font-size: 1.5rem;
 }
 
 .friend-events {
@@ -2263,7 +2269,7 @@ body{
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-size: 1.5rem;
   color: var(--muted);
 }
 
@@ -2275,7 +2281,7 @@ body{
 }
 
 .friend-event__participants span {
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   padding: 0.2rem 0.5rem;
   border-radius: 999px;
   background: rgba(56, 176, 0, 0.15);

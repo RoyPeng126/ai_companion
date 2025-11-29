@@ -40,7 +40,6 @@
 
     card.innerHTML = `
       <h2>家屬與社工邀請</h2>
-      <p class="helper-text">當家人或社工想一起關心您時，會在這裡出現邀請。</p>
       <div id="care-invitations-content">
         <p class="helper-text">目前沒有新的邀請。</p>
       </div>

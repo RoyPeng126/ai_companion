@@ -1402,6 +1402,4 @@
       setStatus(`已切換至${PERSONA_LABELS[normalized]}，開始新的對話吧！`);
     }
   });
-
-  setStatus("說聲你好，開始和 AI 夥伴聊聊吧！");
 })();
