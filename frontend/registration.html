@@ -77,7 +77,8 @@
           <div class="success-panel__id" data-elder-id>—</div>
           <div class="success-panel__actions">
             <button type="button" class="btn secondary" id="copyElderIdBtn">複製 User ID</button>
-            <a class="btn primary" href="login.html">前往登入</a>
+            <!-- Demo onboarding entry: frontend-only quiz route -->
+            <button type="button" class="btn secondary" id="startQuizBtn">開始個人化陪伴測驗</button>
           </div>
         </div>
       </div>
@@ -187,6 +188,8 @@
       const successPanel=document.getElementById('elderSuccessPanel')
       const elderIdLabel=successPanel?.querySelector('[data-elder-id]')
       const copyBtn=document.getElementById('copyElderIdBtn')
+      const startQuizBtn=document.getElementById('startQuizBtn')
+      const DEMO_AUTO_LOGIN_KEY='ai-companion-demo-auto-login'
 
       const applyRoleVisuals=(roleKey)=>{
         const info=roleData[roleKey]
@@ -283,6 +286,15 @@
           if(res.ok){
             const user=data?.user
             if(elderMode && user){
+              // Demo only: keep temporary credentials in session for quiz -> home auto-login.
+              try{
+                sessionStorage.setItem(DEMO_AUTO_LOGIN_KEY,JSON.stringify({
+                  role:'elder',
+                  identifier:phone,
+                  phone,
+                  password
+                }))
+              }catch(_){/* ignore */}
               form.hidden=true
               successPanel.hidden=false
               if(elderIdLabel) elderIdLabel.textContent=user.user_id
@@ -312,6 +324,10 @@
         }catch(_){
           alert('請手動複製：'+text)
         }
+      })
+
+      startQuizBtn?.addEventListener('click',()=>{
+        location.href='onboarding-quiz.html'
       })
     })()
   </script>

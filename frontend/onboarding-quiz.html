@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <link rel="stylesheet" href="assets/css/device-frame.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>個人化陪伴測驗｜智護生活</title>
+  <link rel="icon" href="assets/image/logo.jpg" type="image/x-icon">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif;
+      background: #f5f5f5;
+      color: #1f2937;
+    }
+    .page {
+      max-width: 560px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: #fff;
+      padding: 28px 20px 36px;
+    }
+    .title {
+      font-size: 34px;
+      line-height: 1.3;
+      font-weight: 800;
+      margin-bottom: 10px;
+      color: #b4232f;
+    }
+    .subtitle {
+      font-size: 21px;
+      line-height: 1.7;
+      color: #374151;
+      margin-bottom: 22px;
+    }
+    .progress {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .question-card {
+      border: 2px solid #f1c3c7;
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 16px;
+      background: #fffafa;
+    }
+    .question {
+      font-size: 28px;
+      line-height: 1.5;
+      font-weight: 800;
+      margin-bottom: 16px;
+      color: #111827;
+    }
+    .options {
+      display: grid;
+      gap: 12px;
+    }
+    .option-btn {
+      width: 100%;
+      text-align: left;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      background: #fff;
+      color: #1f2937;
+      padding: 16px 18px;
+      font-size: 24px;
+      line-height: 1.5;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .option-btn:hover,
+    .option-btn:focus-visible {
+      border-color: #eb515c;
+      outline: none;
+      background: #fff5f6;
+    }
+    .result-card {
+      border: 2px solid #f1c3c7;
+      border-radius: 18px;
+      padding: 22px;
+      background: #fffafa;
+      margin-bottom: 18px;
+    }
+    .result-label {
+      font-size: 24px;
+      margin-bottom: 10px;
+      font-weight: 700;
+      color: #374151;
+    }
+    .result-type {
+      font-size: 46px;
+      line-height: 1.25;
+      font-weight: 900;
+      color: #b4232f;
+      margin-bottom: 12px;
+    }
+    .result-desc {
+      font-size: 24px;
+      line-height: 1.7;
+      color: #1f2937;
+    }
+    .actions {
+      display: grid;
+      gap: 12px;
+    }
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 24px;
+      line-height: 1.4;
+      font-weight: 800;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+    }
+    .action-btn.primary { background: #eb515c; color: #fff; }
+    .action-btn.secondary { background: #fff; color: #374151; border: 2px solid #e5e7eb; }
+  </style>
+</head>
+<body class="mobile-shell">
+  <div class="device-frame">
+    <main class="page">
+      <h1 class="title">個人化陪伴測驗</h1>
+      <p class="subtitle">回答 5 題後，系統會產生您的陪伴風格。</p>
+
+      <section id="quizView" aria-live="polite"></section>
+      <section id="resultView" hidden aria-live="polite"></section>
+    </main>
+  </div>
+
+  <script>
+    const API_BASE = (window.aiCompanion?.getApiBase?.() || 'http://localhost:3001').replace(/\/$/, '')
+    const DEMO_AUTO_LOGIN_KEY = 'ai-companion-demo-auto-login'
+    const SKIP_WELCOME_KEY = 'ai-companion-skip-welcome'
+
+    // Demo mock data is centralized here for easy future edits.
+    const QUIZ_DATA = [
+      {
+        id: 'q1',
+        question: '平常最喜歡的互動方式是？',
+        options: [
+          { text: '有人在旁邊陪我聊聊近況', type: '陪伴型' },
+          { text: '一起做點活動，邊動邊聊', type: '活力互動型' },
+          { text: '固定時間打招呼最安心', type: '穩定生活型' },
+          { text: '分享心情、被耐心傾聽', type: '關懷傾聽型' }
+        ]
+      },
+      {
+        id: 'q2',
+        question: '早上起床後，您比較常做什麼？',
+        options: [
+          { text: '先和家人朋友問早安', type: '陪伴型' },
+          { text: '伸展或散步一下', type: '活力互動型' },
+          { text: '照固定順序開始一天', type: '穩定生活型' }
+        ]
+      },
+      {
+        id: 'q3',
+        question: '如果今天心情低落，最希望得到什麼？',
+        options: [
+          { text: '有人安靜陪伴就好', type: '陪伴型' },
+          { text: '有人鼓勵我做些事情轉換心情', type: '活力互動型' },
+          { text: '提醒我照原本作息慢慢來', type: '穩定生活型' },
+          { text: '有人願意聽我說完心事', type: '關懷傾聽型' }
+        ]
+      },
+      {
+        id: 'q4',
+        question: '理想的一天節奏是？',
+        options: [
+          { text: '有幾段和人互動的時光', type: '陪伴型' },
+          { text: '內容豐富、有新鮮感', type: '活力互動型' },
+          { text: '規律、穩定、按計畫進行', type: '穩定生活型' }
+        ]
+      },
+      {
+        id: 'q5',
+        question: '和陪伴者聊天時，您最在意？',
+        options: [
+          { text: '感覺到被重視與陪伴', type: '陪伴型' },
+          { text: '聊天內容有趣、有行動力', type: '活力互動型' },
+          { text: '提醒實用、步調穩定', type: '穩定生活型' },
+          { text: '語氣溫柔，能理解我的感受', type: '關懷傾聽型' }
+        ]
+      }
+    ]
+
+    const TYPE_DESCRIPTIONS = {
+      '陪伴型': '您重視安心與陪伴，喜歡有人在身邊，透過日常問候建立溫暖連結。',
+      '活力互動型': '您喜歡有節奏、有參與感的互動，透過活動與聊天讓每天更有精神。',
+      '穩定生活型': '您偏好規律與可預期的安排，穩定的提醒與節奏能讓您更安心。',
+      '關懷傾聽型': '您重視被理解與情感支持，溫柔、耐心的回應最能讓您感到被照顧。'
+    }
+
+    // Tie-break priority for deterministic frontend-only result.
+    const TYPE_PRIORITY = ['陪伴型', '關懷傾聽型', '穩定生活型', '活力互動型']
+
+    const state = {
+      index: 0,
+      answers: []
+    }
+
+    const quizView = document.getElementById('quizView')
+    const resultView = document.getElementById('resultView')
+
+    function renderQuestion() {
+      const current = QUIZ_DATA[state.index]
+      quizView.hidden = false
+      resultView.hidden = true
+      quizView.innerHTML = `
+        <p class="progress">第 ${state.index + 1} 題 / 共 ${QUIZ_DATA.length} 題</p>
+        <div class="question-card">
+          <h2 class="question">${current.question}</h2>
+          <div class="options">
+            ${current.options.map((opt, idx) => `
+              <button type="button" class="option-btn" data-option-index="${idx}">${opt.text}</button>
+            `).join('')}
+          </div>
+        </div>
+      `
+
+      quizView.querySelectorAll('[data-option-index]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const option = current.options[Number(btn.dataset.optionIndex)]
+          // Store only local in-memory demo answer; no backend upload.
+          state.answers.push(option.type)
+          state.index += 1
+
+          if (state.index >= QUIZ_DATA.length) {
+            renderResult()
+            return
+          }
+          renderQuestion()
+        })
+      })
+    }
+
+    function calculateType() {
+      const score = {
+        '陪伴型': 0,
+        '活力互動型': 0,
+        '穩定生活型': 0,
+        '關懷傾聽型': 0
+      }
+
+      state.answers.forEach((type) => {
+        if (score[type] !== undefined) score[type] += 1
+      })
+
+      let bestType = TYPE_PRIORITY[0]
+      let bestScore = -1
+
+      TYPE_PRIORITY.forEach((type) => {
+        const value = score[type]
+        if (value > bestScore) {
+          bestScore = value
+          bestType = type
+        }
+      })
+
+      return bestType
+    }
+
+    function renderResult() {
+      const type = calculateType()
+      const desc = TYPE_DESCRIPTIONS[type] || ''
+
+      quizView.hidden = true
+      resultView.hidden = false
+      resultView.innerHTML = `
+        <div class="result-card">
+          <p class="result-label">您的陪伴風格是：</p>
+          <h2 class="result-type">${type}</h2>
+          <p class="result-desc">${desc}</p>
+        </div>
+        <div class="actions">
+          <button type="button" class="action-btn primary" id="goHomeBtn">前往首頁</button>
+        </div>
+      `
+
+      document.getElementById('goHomeBtn')?.addEventListener('click', goHomeWithAuth)
+    }
+
+    async function goHomeWithAuth() {
+      try {
+        // Avoid homepage first-visit redirect back to welcome during this flow.
+        sessionStorage.setItem(SKIP_WELCOME_KEY, 'true')
+      } catch (_) {}
+
+      try {
+        const meRes = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
+        if (meRes.ok) {
+          location.href = 'index.html'
+          return
+        }
+      } catch (_) {}
+
+      let cached = null
+      try {
+        cached = JSON.parse(sessionStorage.getItem(DEMO_AUTO_LOGIN_KEY) || 'null')
+      } catch (_) {
+        cached = null
+      }
+      if (!cached?.identifier || !cached?.password) {
+        location.href = 'login.html?error=login_required'
+        return
+      }
+
+      const loginPayload = {
+        role: cached.role || 'elder',
+        identifier: cached.identifier,
+        phone: String(cached.phone || cached.identifier).replace(/\D+/g, ''),
+        password: cached.password
+      }
+
+      try {
+        const loginRes = await fetch(`${API_BASE}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(loginPayload)
+        })
+        if (loginRes.ok) {
+          try { sessionStorage.removeItem(DEMO_AUTO_LOGIN_KEY) } catch (_) {}
+          location.href = 'index.html'
+          return
+        }
+      } catch (_) {}
+
+      location.href = 'login.html?error=login_required'
+    }
+
+    renderQuestion()
+  </script>
+</body>
+</html>
