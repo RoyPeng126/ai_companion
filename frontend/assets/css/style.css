@@ -20,14 +20,14 @@ body {
   margin: 0;
   font-family: "Segoe UI", "Noto Sans TC", sans-serif;
   color: var(--text);
-  background: linear-gradient(135deg, var(--bg) 0%, #ffffff 60%);
+  background: #fff;
   min-height: 100vh;
-  font-size: 36px;
+  font-size: clamp(15px, 1.7vw, 17px);
   line-height: 1.6;
 }
 
 body, input, select, textarea, button {
-  font-size: 36px;
+  font-size: inherit;
 }
 
 a {
@@ -52,13 +52,14 @@ footer {
 
 .app-shell {
   width: 100%;
-  max-width: 600px;
+  max-width: 960px;
+  min-height: 100vh;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: clamp(16px, 4vw, 32px);
   background: #fff;
-  border-radius: 32px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
 }
 
 .top-bar {
@@ -83,7 +84,7 @@ footer {
 }
 
 .brand h1 {
-  font-size: 1.5rem;
+  font-size: clamp(1.05rem, 3vw, 1.25rem);
   margin: 0;
 }
 
@@ -305,7 +306,7 @@ footer {
 
 .hero h2 {
   margin: 0;
-  font-size: clamp(2.3rem, 4.8vw, 3.1rem);
+  font-size: clamp(1.65rem, 5vw, 2.25rem);
 }
 
 .hero .btn {
@@ -315,7 +316,7 @@ footer {
 }
 
 .hero p {
-  font-size: 1.2rem;
+  font-size: 1rem;
   margin: 0;
   line-height: 1.6;
 }
@@ -570,6 +571,106 @@ footer {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
+.function-tabs {
+  display: grid;
+  gap: 1rem;
+  margin-block: 24px;
+}
+
+.function-tabs__bar {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+}
+
+.function-tabs__tab {
+  position: relative;
+  min-width: 0;
+  padding: 0.8rem 0.35rem 0.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: normal;
+  cursor: pointer;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  transition: color 0.22s ease, transform 0.22s ease;
+}
+
+.function-tabs__indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 0;
+  height: 4px;
+  border-radius: 999px 999px 0 0;
+  background: var(--primary);
+  transform: translateX(0);
+  transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), width 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  will-change: transform, width;
+}
+
+.function-tabs__tab.is-active {
+  color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.function-tabs__tab:focus-visible {
+  outline: 3px solid rgba(230, 57, 70, 0.25);
+  outline-offset: -3px;
+}
+
+.function-tabs__panel {
+  margin: 0;
+}
+
+.function-tabs__panel.is-active {
+  animation: function-panel-in 0.22s ease both;
+}
+
+.function-tabs__panel[hidden] {
+  display: none !important;
+}
+
+@keyframes function-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.function-layout {
+  width: 100%;
+  max-width: 960px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: clamp(16px, 4vw, 32px);
+  background: #fff;
+}
+
+.function-page main,
+.function-page footer {
+  padding-inline: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .function-tabs__tab,
+  .function-tabs__panel.is-active {
+    animation: none;
+    transition: none;
+  }
+}
+
 .card {
   background: var(--card-bg);
   border-radius: 24px;
@@ -671,7 +772,7 @@ textarea::placeholder {
 }
 
 .helper-text {
-  font-size: 2rem;
+  font-size: 0.95rem;
   color: var(--muted);
 }
 
@@ -904,7 +1005,7 @@ tbody td {
 .avatar.big {
   width: 96px;
   height: 96px;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
 }
 
 .avatar img {
@@ -939,7 +1040,7 @@ tbody td {
 }
 
 .podium__rank {
-  font-size: 2.4rem;
+  font-size: 1.9rem;
   font-weight: 700;
   letter-spacing: 0.05em;
 }
@@ -1615,7 +1716,7 @@ footer {
 .podium--third  .podium__label{ background:#8ee26a; }
 
 /* 名次數字 */
-.podium__rank{ font-weight:900; font-size:28px; line-height:1; }
+.podium__rank{ font-weight:900; font-size:24px; line-height:1; }
 .podium--first  .podium__rank{ color:#c56b2a; }
 .podium--second .podium__rank{ color:#3b6cd6; }
 .podium--third  .podium__rank{ color:#2c8e2f; }
@@ -1761,6 +1862,17 @@ footer {
   .btn {
     width: 100%;
   }
+
+  .function-tabs__bar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-inline: 0;
+  }
+
+  .function-tabs__tab {
+    min-width: 0;
+    padding-inline: 0.2rem;
+    font-size: clamp(0.78rem, 3.4vw, 0.95rem);
+  }
 }
 .grid { display: grid; gap: 24px; }
 .grid.two   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1776,23 +1888,21 @@ footer {
   background: #fff;
   box-shadow: 0 4px 14px rgba(0,0,0,.08);
 }
-.app-shell { padding: 24px; }
+.app-shell { padding: clamp(16px, 4vw, 32px); }
 section { margin-block: 24px; }
 
 @media (max-width: 768px) {
   .grid.two, .grid.three { grid-template-columns: 1fr; }
-  .app-shell { border-radius: 28px; box-shadow: 0 10px 32px rgba(0,0,0,0.12); }
+  .app-shell { border-radius: 0; box-shadow: none; }
 }
 
 
-/* 全站手機外框：白底、圓角、陰影、置中 */
+/* 全站內容頁：白底、自然寬度，避免手機版被外框壓縮 */
 body{
-  background:#f5f5f5;
+  background:#fff;
   min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
+  display:block;
+  padding:0;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;
 }
 
@@ -2193,7 +2303,7 @@ body{
   border-radius: 999px;
   border: 1px solid rgba(15, 23, 42, 0.15);
   padding: 0.65rem 1rem;
-  font-size: 1.5rem;
+  font-size: 0.95rem;
 }
 
 .friend-request {
@@ -2241,7 +2351,7 @@ body{
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.08);
-  font-size: 1.5rem;
+  font-size: 0.9rem;
 }
 
 .friend-events {
@@ -2272,7 +2382,7 @@ body{
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  font-size: 1.5rem;
+  font-size: 0.9rem;
   color: var(--muted);
 }
 

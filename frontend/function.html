@@ -6,7 +6,7 @@
   <title>智護生活：AI 伴你</title>
   <link rel="icon" href="assets/image/logo.jpg" type="image/x-icon">
   <!-- CSS -->
-  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=5">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin>
   <link rel="stylesheet" href="assets/css/safety-map.css">
   <script>
@@ -25,8 +25,8 @@
     })()
   </script>
 </head>
-<body>
-  <div class="app-shell">
+<body class="function-page">
+  <div class="function-layout">
     <header class="top-bar" aria-label="主要導覽">
       <div class="brand">
         <span class="brand-logo" aria-hidden="true">
@@ -72,8 +72,16 @@
         </div>
       </section>
 
-      <section class="grid two" aria-label="快速操作">
-        <article class="card">
+      <section class="function-tabs" aria-label="功能切換">
+        <div class="function-tabs__bar" role="tablist" aria-label="功能分類">
+          <button class="function-tabs__tab is-active" id="tab-reminders" type="button" role="tab" aria-selected="true" aria-controls="panel-reminders" data-function-tab="reminders">重點提醒</button>
+          <button class="function-tabs__tab" id="tab-safety" type="button" role="tab" aria-selected="false" aria-controls="panel-safety" data-function-tab="safety">安全概況</button>
+          <button class="function-tabs__tab" id="tab-forum" type="button" role="tab" aria-selected="false" aria-controls="panel-forum" data-function-tab="forum">社群論壇活動</button>
+          <button class="function-tabs__tab" id="tab-feed" type="button" role="tab" aria-selected="false" aria-controls="panel-feed" data-function-tab="feed">親友最新動態</button>
+          <span class="function-tabs__indicator" aria-hidden="true"></span>
+        </div>
+
+        <article class="card function-tabs__panel is-active" id="panel-reminders" role="tabpanel" aria-labelledby="tab-reminders" data-function-panel="reminders">
           <h3>重點提醒</h3>
           <div class="reminder-actions">
             <button class="btn secondary" type="button" id="addEventBtn">新增提醒</button>
@@ -113,7 +121,8 @@
           <ul class="list" id="today-list"></ul>
         </article>
 
-        <article class="card" id="safety-card">
+        <article class="card function-tabs__panel" id="panel-safety" role="tabpanel" aria-labelledby="tab-safety" data-function-panel="safety" hidden>
+        <div id="safety-card">
           <h3>安全概況</h3>
           <div class="safety-status" id="safetyStatus">
             <span class="status-chip status-chip--alert" id="safetyChip">尚未設定</span>
@@ -122,11 +131,10 @@
             <p class="map-feedback map-feedback--error" id="safetyWarning" hidden></p>
           </div>
           <div id="safety-map" aria-label="安全地圖"></div>
+        </div>
         </article>
-      </section>
 
-      <section class="grid two" aria-label="社交與回憶">
-        <article class="card friend-forum-card" data-friend-forum aria-live="polite">
+        <article class="card function-tabs__panel friend-forum-card" id="panel-forum" role="tabpanel" aria-labelledby="tab-forum" data-function-panel="forum" data-friend-forum aria-live="polite" hidden>
           <div class="card-header">
             <div>
               <h3>社群論壇活動</h3>
@@ -191,7 +199,7 @@
             <p>此區塊僅提供長輩帳號使用。請協助長輩分享手機與 User ID，讓好友可以加入。</p>
           </div>
         </article>
-        <article class="card facebook-feed-card" data-facebook-feed>
+        <article class="card function-tabs__panel facebook-feed-card" id="panel-feed" role="tabpanel" aria-labelledby="tab-feed" data-function-panel="feed" data-facebook-feed hidden>
           <div class="card-header">
             <h3>親友最新動態</h3>
             <button class="btn secondary" type="button" data-facebook-refresh aria-label="重新整理 Facebook 貼文">重新整理</button>
@@ -212,26 +220,78 @@
 
   <!-- JS 順序：先基礎，再功能模組 -->
   <script>
-    // Reorder cards: Chat -> top-left, Today -> top-right, Safety map -> next row left
-    (function(){
-      try {
-        const grids = document.querySelectorAll('.grid.two');
-        if (grids.length >= 2) {
-          const first = grids[0];
-          const second = grids[1];
-          const todayCard = first.querySelector('#today-list')?.closest('article');
-          const safetyCard = first.querySelector('#safety-card');
-          const chatCard = second.querySelector('[data-ai-chat]')?.closest('article');
-          const secondArticles = Array.from(second.querySelectorAll('article'));
-          const socialCard = secondArticles.find(a => !a.contains(second.querySelector('[data-ai-chat]')));
-          if (first && second && todayCard && safetyCard && chatCard && socialCard) {
-            first.insertBefore(chatCard, first.firstChild);
-            if (todayCard !== first.lastElementChild) first.appendChild(todayCard);
-            second.insertBefore(safetyCard, second.firstChild);
-            if (socialCard !== second.lastElementChild) second.appendChild(socialCard);
-          }
+    (function initFunctionTabs(){
+      const tabs = Array.from(document.querySelectorAll('[data-function-tab]'))
+      const panels = Array.from(document.querySelectorAll('[data-function-panel]'))
+      const tabBar = document.querySelector('.function-tabs__bar')
+      const indicator = document.querySelector('.function-tabs__indicator')
+      if (!tabs.length || !panels.length) return
+
+      function moveIndicator(tab, animate = true) {
+        if (!tabBar || !indicator || !tab) return
+        const barRect = tabBar.getBoundingClientRect()
+        const tabRect = tab.getBoundingClientRect()
+        const x = tabRect.left - barRect.left
+        const width = tabRect.width
+        const fromX = Number(indicator.dataset.x || x)
+        const fromWidth = Number(indicator.dataset.width || width)
+        indicator.style.width = `${width}px`
+        indicator.style.transform = `translateX(${x}px)`
+        if (animate && typeof indicator.animate === 'function' && (fromX !== x || fromWidth !== width)) {
+          indicator.animate([
+            { transform: `translateX(${fromX}px)`, width: `${fromWidth}px` },
+            { transform: `translateX(${x}px)`, width: `${width}px` }
+          ], {
+            duration: 420,
+            easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
+          })
         }
-      } catch(_) {}
+        indicator.dataset.x = String(x)
+        indicator.dataset.width = String(width)
+      }
+
+      function activateTab(name) {
+        const activeTab = tabs.find((tab) => tab.dataset.functionTab === name) || tabs[0]
+        moveIndicator(activeTab)
+        tabs.forEach((tab) => {
+          const active = tab.dataset.functionTab === name
+          tab.classList.toggle('is-active', active)
+          tab.setAttribute('aria-selected', active ? 'true' : 'false')
+          tab.tabIndex = active ? 0 : -1
+        })
+        panels.forEach((panel) => {
+          const active = panel.dataset.functionPanel === name
+          panel.classList.toggle('is-active', active)
+          panel.hidden = !active
+        })
+        try {
+          window.dispatchEvent(new CustomEvent('function-tab-change', { detail: { panel: name } }))
+        } catch (_) {}
+      }
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => activateTab(tab.dataset.functionTab))
+        tab.addEventListener('keydown', (event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+          event.preventDefault()
+          let nextIndex = index
+          if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length
+          if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length
+          if (event.key === 'Home') nextIndex = 0
+          if (event.key === 'End') nextIndex = tabs.length - 1
+          tabs[nextIndex].focus()
+          activateTab(tabs[nextIndex].dataset.functionTab)
+        })
+      })
+
+      requestAnimationFrame(() => {
+        const activeTab = tabs.find((tab) => tab.classList.contains('is-active')) || tabs[0]
+        moveIndicator(activeTab, false)
+      })
+      window.addEventListener('resize', () => {
+        const activeTab = tabs.find((tab) => tab.classList.contains('is-active')) || tabs[0]
+        moveIndicator(activeTab, false)
+      })
     })();
   </script>
   <script src="assets/js/app.js"></script>
@@ -261,6 +321,13 @@
     const detailEl = document.getElementById('safetyDetail')
     const warningEl = document.getElementById('safetyWarning')
     const { map, L } = initLeafletMap('safety-map', { zoomControl: false })
+    window.addEventListener('function-tab-change', (event) => {
+      if (event.detail?.panel === 'safety') {
+        setTimeout(() => {
+          try { map.invalidateSize() } catch (_) {}
+        }, 80)
+      }
+    })
     const homeIcon = L.divIcon({ className: 'home-marker', html: '<span class="home-marker__icon">🏠</span>', iconAnchor: [16, 32], popupAnchor: [0, -28] })
     let safetyCircle = null, homeMarker = null, userMarker = null, hasAlerted = false
     function setChipState (state) {
